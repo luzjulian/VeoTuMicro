@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+@custom-variant data-horizontal (&[data-orientation="horizontal"]);
+@custom-variant data-vertical (&[data-orientation="vertical"]);
+
 @layer base {
   /* Forzamos el fondo oscuro y la tipografía en todo el cuerpo de la app */
   body {

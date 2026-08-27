@@ -37,27 +37,33 @@ export function useSpeechSynthesis({ lang = "es-AR" } = {}) {
       synth.cancel();
       setError(null);
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = lang;
-      utterance.rate = rate;
-      utterance.pitch = pitch;
+      // Pausa mínima entre cancel() y speak(): sin esto, Chrome puede dejar
+      // el motor de síntesis atascado para siempre (bug conocido del
+      // navegador al encadenar cancel()+speak() en el mismo tick de JS).
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = rate;
+        utterance.pitch = pitch;
 
-      const preferredVoice = voices.find((v) => v.lang === lang) ||
-        voices.find((v) => v.lang?.startsWith(lang.split("-")[0]));
-      if (preferredVoice) utterance.voice = preferredVoice;
+        const preferredVoice =
+          voices.find((v) => v.lang === lang) ||
+          voices.find((v) => v.lang?.startsWith(lang.split("-")[0]));
+        if (preferredVoice) utterance.voice = preferredVoice;
 
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        onEnd?.();
-      };
-      utterance.onerror = (event) => {
-        setError(event.error);
-        setIsSpeaking(false);
-      };
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => {
+          setIsSpeaking(false);
+          onEnd?.();
+        };
+        utterance.onerror = (event) => {
+          setError(event.error);
+          setIsSpeaking(false);
+        };
 
-      currentUtteranceRef.current = utterance;
-      synth.speak(utterance);
+        currentUtteranceRef.current = utterance;
+        synth.speak(utterance);
+      }, 50);
     },
     [isSupported, lang, voices]
   );

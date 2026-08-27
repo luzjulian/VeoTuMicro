@@ -78,8 +78,7 @@ export function simularEventosDeBajadaMock(onEvent) {
 }
 
 // TODO: reemplazar por evento Socket.io real cuando exista el backend y
-// el Panel del Conductor (2.8). Por ahora deja rastro en consola para
-// poder verificar el flujo de cancelación durante el desarrollo.
+// el Panel del Conductor (2.8).
 export function notificarCancelacionAlConductorMock(numeroSolicitud) {
   console.info(`[mock] Notificando cancelación del viaje ${numeroSolicitud} al conductor`);
 }

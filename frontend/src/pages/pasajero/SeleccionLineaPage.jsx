@@ -39,7 +39,7 @@ export default function SeleccionLineaPage() {
       mensajePregunta: "Decí el número de línea",
       etiquetaOpcion: (l) => `Línea ${l.nroLinea}`,
       mensajeNoDisponible: (texto) => `${texto} no disponible, decí un número de línea disponible`,
-      mensajeConfirmadoTts: "Dirigiendo a la pagina de selección de destino",
+      mensajeConfirmadoTts: "Dirigiendo a la selección de destino deseado",
       onConfirmado: confirmarSeleccion,
     });
 

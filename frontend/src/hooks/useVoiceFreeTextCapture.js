@@ -26,8 +26,8 @@ export function useVoiceFreeTextCapture({
 
   const esperandoCaptura = useRef(false);
   const intentosRef = useRef(0);
+  const yaIniciado = useRef(false);
 
-  // src/hooks/useVoiceFreeTextCapture.js — mismo cambio
   const pedirCaptura = useCallback(
     (mensaje) => {
       stopListening();
@@ -56,10 +56,9 @@ export function useVoiceFreeTextCapture({
     [preguntarSiNo, formatearConfirmacion, speak, mensajeConfirmadoTts, onConfirmado, pedirCaptura, mensajePregunta]
   );
 
- 
-  const yaIniciado = useRef(false);
-
   useEffect(() => {
+    // Misma guarda contra doble-montaje de StrictMode que en
+    // useVoiceListSelection — ver comentario allá para el detalle completo.
     if (yaIniciado.current) return;
     yaIniciado.current = true;
     pedirCaptura();
@@ -74,7 +73,7 @@ export function useVoiceFreeTextCapture({
     if (isListening || !esperandoCaptura.current) return;
     esperandoCaptura.current = false;
 
-    if (transcript.trim()) {
+    if (transcript?.trim()) {
       confirmar(transcript.trim());
       return;
     }

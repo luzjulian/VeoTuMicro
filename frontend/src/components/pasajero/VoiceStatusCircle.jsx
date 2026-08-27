@@ -2,10 +2,9 @@
 import { Mic } from "lucide-react";
 
 /**
- * Círculo de estado del micrófono. Es tocable solo cuando `fallbackActivo`
- * y `onRetry` están presentes (Línea/Destino tras agotar los 10 intentos);
- * en el resto del flujo (incluida toda la pantalla de Espera) es puramente
- * visual — la escucha es automática y no requiere interacción.
+ * Círculo de estado del micrófono. Tocable solo cuando `fallbackActivo` y
+ * `onRetry` están presentes (Línea/Destino tras agotar los 10 intentos);
+ * en el resto del flujo es puramente visual — la escucha es automática.
  */
 export function VoiceStatusCircle({ escuchando, fallbackActivo = false, onRetry }) {
   const esTocable = fallbackActivo && !!onRetry;

@@ -5,9 +5,7 @@ import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 /**
  * Serializa anuncios de voz para que nunca se pisen entre sí, sin importar
  * en qué momento llega el evento que los dispara (timers de mock hoy,
- * eventos de Socket.io mañana — el reemplazo es directo, esta cola no
- * necesita cambios). Cada anuncio se encola y el siguiente arranca recién
- * cuando el anterior termina de sonar.
+ * eventos de Socket.io mañana — el reemplazo es directo).
  */
 export function useVoiceQueue() {
   const { speak, isSpeaking, cancel } = useSpeechSynthesis();

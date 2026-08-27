@@ -28,18 +28,16 @@ export function useVoiceListSelection({
 
   const esperandoSeleccion = useRef(false);
   const intentosRef = useRef(0);
+  const yaIniciado = useRef(false);
 
-  
   const pedirSeleccion = useCallback(
     (mensaje) => {
       stopListening();
       resetTranscript();
       speak(mensaje ?? mensajePregunta, {
         onEnd: () => {
-          // Se marca "esperando respuesta" recién acá, justo antes de
-          // escuchar de verdad — así el efecto de matching no puede
-          // dispararse en el hueco mientras el sistema todavía está
-          // hablando (o ni empezó a hablar).
+          // Se marca "esperando" recién en onEnd (ver useVoiceYesNo para
+          // el detalle de por qué evita el falso intento fallido al montar).
           esperandoSeleccion.current = true;
           startListening();
         },
@@ -62,18 +60,18 @@ export function useVoiceListSelection({
     [preguntarSiNo, etiquetaOpcion, speak, mensajeConfirmadoTts, onConfirmado, pedirSeleccion, mensajePregunta]
   );
 
-  const yaIniciado = useRef(false);
-
   useEffect(() => {
+    // Guarda contra el doble-montaje de StrictMode en desarrollo: sin esto,
+    // React monta -> desmonta -> vuelve a montar y se dispara speak() dos
+    // veces casi en simultáneo, lo que deja la síntesis de voz de Chrome
+    // atascada (bug conocido del navegador con cancel()+speak() sin pausa).
+    // OJO: no resetear yaIniciado.current en la limpieza — un desmontaje
+    // real crea una instancia nueva del hook con el ref en false de nuevo,
+    // así que no hace falta forzarlo, y forzarlo es lo que rompía todo.
     if (yaIniciado.current) return;
     yaIniciado.current = true;
     pedirSeleccion();
 
-    // Ya NO reseteamos yaIniciado.current acá — un desmontaje real crea una
-    // instancia nueva del componente con el ref en false de nuevo, así que
-    // no hace falta forzarlo. Resetearlo acá es lo que rompía todo con el
-    // doble-montaje de StrictMode (bug de Chrome: cancel()+speak() sin
-    // pausa entre medio deja la síntesis de voz atascada para siempre).
     return () => {
       stopListening();
     };
@@ -84,7 +82,7 @@ export function useVoiceListSelection({
     if (isListening || !esperandoSeleccion.current) return;
     esperandoSeleccion.current = false;
 
-    const match = matchFn(transcript, opciones);
+    const match = transcript ? matchFn(transcript, opciones) : null;
     if (match) {
       confirmar(match);
       return;
@@ -100,7 +98,7 @@ export function useVoiceListSelection({
       return;
     }
 
-    pedirSeleccion(mensajeNoDisponible(transcript));
+    pedirSeleccion(transcript ? mensajeNoDisponible(transcript) : mensajePregunta);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isListening, transcript]);
 
@@ -113,7 +111,7 @@ export function useVoiceListSelection({
   );
 
   // Reactivado por tap en el círculo tras agotar los 10 intentos: reinicia
-  // el ciclo completo desde cero, no suma sobre el contador agotado.
+  // el ciclo completo desde cero.
   const reintentarPorToque = useCallback(() => {
     intentosRef.current = 0;
     setIntentos(0);

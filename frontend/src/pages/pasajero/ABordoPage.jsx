@@ -1,5 +1,5 @@
 // src/pages/pasajero/ABordoPage.jsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { simularEventosDeBajadaMock } from "@/services/mock/mockRealtimeService";
 import { useVoiceQueue } from "@/hooks/useVoiceQueue";
@@ -12,19 +12,11 @@ export default function ABordoPage() {
   const [conductorVaADetenerse, setConductorVaADetenerse] = useState(false);
   const [descensoConfirmado, setDescensoConfirmado] = useState(false);
 
-  const yaAnunciado = useRef(false);
-
   useEffect(() => {
     if (viaje.estadoViaje !== "a_bordo") {
       navigate("/pasajero/linea", { replace: true });
       return;
     }
-
-    // Guarda contra el doble-montaje de StrictMode en desarrollo: sin esto,
-    // los anuncios se encolan dos veces (monta -> desmonta -> monta) porque
-    // useVoiceQueue no se resetea entre esos ciclos.
-    if (yaAnunciado.current) return;
-    yaAnunciado.current = true;
 
     encolar("Se le ha notificado al conductor tu destino");
     encolar("El conductor te avisará cuando debas bajar");

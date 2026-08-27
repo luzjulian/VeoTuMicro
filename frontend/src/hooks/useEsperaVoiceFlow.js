@@ -12,18 +12,13 @@ function esPedidoDeCancelacion(transcript) {
 }
 
 /**
- * Orquesta TODO el reconocimiento de voz de la pantalla de Espera con una
- * única instancia de escucha — el navegador no permite dos sesiones de
- * reconocimiento activas en simultáneo, así que no se puede usar
- * useVoiceYesNo (u otro hook con su propia instancia) al mismo tiempo que
- * una escucha constante.
- *
+ * Orquesta TODO el reconocimiento de voz de Espera con una única instancia
+ * de escucha (el navegador no permite dos sesiones activas en simultáneo).
  * Mientras la escucha constante está habilitada, se reinicia sola apenas
  * termina cada sesión (y el sistema no está hablando — flujo secuencial,
- * sin barge-in). Cada frase reconocida se evalúa primero contra
- * "cancelar viaje": funciona como una interrupción posible en cualquier
- * momento, incluso en medio de otra pregunta pendiente (ej. "¿Has podido
- * abordar?"). Si no es una cancelación, se enruta a esa pregunta pendiente.
+ * sin barge-in). Cada frase se evalúa primero contra "cancelar viaje"
+ * (interrupción posible en cualquier momento); si no matchea, se enruta a
+ * la pregunta pendiente (ej. "¿Has podido abordar?").
  */
 export function useEsperaVoiceFlow({ onCancelar }) {
   const { isListening, transcript, startListening, stopListening, resetTranscript } =
@@ -32,7 +27,7 @@ export function useEsperaVoiceFlow({ onCancelar }) {
 
   const [escuchaActiva, setEscuchaActiva] = useState(false);
   const [cancelado, setCancelado] = useState(false);
-  const preguntaPendienteRef = useRef(null); // { onSi, onNo }
+  const preguntaPendienteRef = useRef(null);
 
   useEffect(() => {
     if (!escuchaActiva || cancelado) return;
@@ -64,8 +59,7 @@ export function useEsperaVoiceFlow({ onCancelar }) {
         preguntaPendienteRef.current = null;
         pregunta.onNo?.();
       }
-      // si no se reconoce ni cancelación ni sí/no, el efecto de arriba
-      // vuelve a escuchar solo (no hace falta reintentar manualmente)
+      // si no matchea nada, el efecto de arriba vuelve a escuchar solo
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isListening, transcript]);

@@ -1,4 +1,3 @@
-
 // src/hooks/useVoiceYesNo.js
 import { useCallback, useEffect, useRef } from "react";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
@@ -24,6 +23,10 @@ export function useVoiceYesNo() {
       esperandoRespuesta.current = false;
       speak(promptText, {
         onEnd: () => {
+          // Se marca "esperando respuesta" recién cuando el TTS termina de
+          // verdad, no antes — si no, hay una ventana de carrera donde el
+          // efecto de abajo puede dispararse con isListening=false y
+          // esperandoRespuesta=true al mismo tiempo que se monta el hook.
           esperandoRespuesta.current = true;
           startListening();
         },
@@ -36,10 +39,17 @@ export function useVoiceYesNo() {
     if (isListening || !esperandoRespuesta.current) return;
     esperandoRespuesta.current = false;
 
-    const resultado = interpretarSiNo(transcript);
     const callbacks = callbacksRef.current;
     if (!callbacks) return;
 
+    // Sin transcript (silencio, error "no-speech", etc.) cuenta como no
+    // reconocido, no se ignora en silencio.
+    if (!transcript) {
+      callbacks.onNoReconocido?.();
+      return;
+    }
+
+    const resultado = interpretarSiNo(transcript);
     if (resultado === "si") callbacks.onSi?.();
     else if (resultado === "no") callbacks.onNo?.();
     else callbacks.onNoReconocido?.();

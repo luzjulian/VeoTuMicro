@@ -18,7 +18,6 @@ export default function EsperaPage() {
   const [colectivoLlego, setColectivoLlego] = useState(false);
 
   const unsubscribeRef = useRef(null);
-  const yaIniciado = useRef(false); // guarda contra doble-montaje de StrictMode
 
   const handleCancelar = () => {
     unsubscribeRef.current?.();
@@ -82,12 +81,6 @@ export default function EsperaPage() {
       navigate("/pasajero/linea", { replace: true });
       return;
     }
-
-    // Guarda contra el doble-montaje de StrictMode en desarrollo: evita
-    // encolar "Procesando solicitud de viaje" dos veces y arrancar dos
-    // suscripciones al mock en paralelo.
-    if (yaIniciado.current) return;
-    yaIniciado.current = true;
 
     anunciar("Procesando solicitud de viaje");
     unsubscribeRef.current = suscribirseAViajeMock(viaje.numeroSolicitud, manejarEvento);

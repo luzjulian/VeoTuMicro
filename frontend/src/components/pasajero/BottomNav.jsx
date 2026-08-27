@@ -4,8 +4,7 @@ import { Home, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // NOTA: "/pasajero/inicio" y "/pasajero/perfil" todavía no tienen pantalla
-// propia (fuera del alcance de esta tanda). "Inicio" apunta al comienzo del
-// flujo (2.4) como placeholder razonable hasta que se defina el dashboard.
+// propia. "Inicio" apunta al comienzo del flujo (2.4) como placeholder.
 export function BottomNav({ bloqueado = false }) {
   const linkClass = ({ isActive }) =>
     cn(

@@ -16,9 +16,7 @@ const ESTADO_INICIAL = {
 export function PasajeroFlowLayout() {
   const [viaje, setViaje] = useState(ESTADO_INICIAL);
 
-  const actualizarViaje = (cambios) =>
-    setViaje((prev) => ({ ...prev, ...cambios }));
-
+  const actualizarViaje = (cambios) => setViaje((prev) => ({ ...prev, ...cambios }));
   const resetViaje = () => setViaje(ESTADO_INICIAL);
 
   return (

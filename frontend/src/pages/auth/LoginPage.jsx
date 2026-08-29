@@ -32,19 +32,24 @@ const handleLogin = (data) => {
           <TabsList className="grid w-full grid-cols-3 mb-6 bg-superficie-primaria h-auto min-h-14 rounded-lg gap-1 p-1">
             <TabsTrigger
               value="pasajero"
-              className="data-[state=active]:bg-acento-primario data-[state=active]:text-fondo-principal data-[state=active]:shadow-lg data-[state=active]:shadow-acento-primario/40 data-[state=active]:scale-[1.02] text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
+              style={{ border: activeTab === 'pasajero' ? '3px solid white' : '3px solid transparent' }}
+              className="data-[state=active]:bg-acento-primario data-[state=active]:!text-white text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
             >
               Pasajero
             </TabsTrigger>
+            
             <TabsTrigger
               value="conductor"
-              className="data-[state=active]:bg-acento-primario data-[state=active]:text-fondo-principal data-[state=active]:shadow-lg data-[state=active]:shadow-acento-primario/40 data-[state=active]:scale-[1.02] text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
+              style={{ border: activeTab === 'conductor' ? '3px solid white' : '3px solid transparent' }}
+              className="data-[state=active]:bg-acento-primario data-[state=active]:!text-white text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
             >
               Conductor
             </TabsTrigger>
+            
             <TabsTrigger
               value="admin"
-              className="data-[state=active]:bg-acento-primario data-[state=active]:text-fondo-principal data-[state=active]:shadow-lg data-[state=active]:shadow-acento-primario/40 data-[state=active]:scale-[1.02] text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
+              style={{ border: activeTab === 'admin' ? '3px solid white' : '3px solid transparent' }}
+              className="data-[state=active]:bg-acento-primario data-[state=active]:!text-white text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
             >
               Admin
             </TabsTrigger>
@@ -78,5 +83,4 @@ const handleLogin = (data) => {
         </Tabs>
       </div>
     </div>
-  );
-}
+  );}

@@ -24,7 +24,7 @@ export function BottomNav({ bloqueado = false }) {
         <Home className="h-5 w-5" />
         Inicio
       </NavLink>
-      <NavLink to="/pasajero/perfil" className={linkClass} aria-disabled={bloqueado}>
+      <NavLink to="/perfil" className={linkClass} aria-disabled={bloqueado}>
         <User className="h-5 w-5" />
         Perfil
       </NavLink>

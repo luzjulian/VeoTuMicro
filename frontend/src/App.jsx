@@ -9,6 +9,7 @@ import SeleccionDestinoPage from "./pages/pasajero/SeleccionDestinoPage";
 import EsperaPage from "./pages/pasajero/EsperaPage";
 import ABordoPage from "./pages/pasajero/ABordoPage";
 import PanelConductorPage from "./pages/conductor/PanelConductorPage";
+import AdminPanelPage from "./pages/admin/Adminpanelpage";
 
 function App() {
   return (
@@ -28,6 +29,8 @@ function App() {
         </Route>
 
         <Route path="/conductor" element={<PanelConductorPage />} />
+        <Route path="/admin" element={<AdminPanelPage/>}/>
+  
       </Routes>
     </BrowserRouter>
   );

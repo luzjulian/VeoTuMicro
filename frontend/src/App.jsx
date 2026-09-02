@@ -8,6 +8,7 @@ import SeleccionLineaPage from "./pages/pasajero/SeleccionLineaPage";
 import SeleccionDestinoPage from "./pages/pasajero/SeleccionDestinoPage";
 import EsperaPage from "./pages/pasajero/EsperaPage";
 import ABordoPage from "./pages/pasajero/ABordoPage";
+import PanelConductorPage from "./pages/conductor/PanelConductorPage";
 
 function App() {
   return (
@@ -25,6 +26,8 @@ function App() {
           <Route path="espera" element={<EsperaPage />} />
           <Route path="viaje" element={<ABordoPage />} />
         </Route>
+
+        <Route path="/conductor" element={<PanelConductorPage />} />
       </Routes>
     </BrowserRouter>
   );

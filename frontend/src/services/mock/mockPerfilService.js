@@ -8,17 +8,17 @@
  */
 
 const PERFIL_MOCK = {
-  rol: "pasajero", // "pasajero" | "conductor" | "admin"
+  rol: "conductor", // "pasajero" | "conductor" | "admin"
   nombre: "Juan Pablo Díaz Rodríguez",
   dni: "40.123.456",
   email: "juan.diaz@gmail.com",
   telefono: "+54 221 555 1234",
   fechaRegistro: "12 de abril de 2024",
-  certificado: {
+  /*certificado: {
     nombreArchivo: "certificado_juan_diaz.pdf",
     fechaCarga: "12/04/2024",
     url: "/mock/certificado.pdf",
-  },
+  },*/
 };
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

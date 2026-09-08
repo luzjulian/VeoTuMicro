@@ -10,6 +10,7 @@ import EsperaPage from "./pages/pasajero/EsperaPage";
 import ABordoPage from "./pages/pasajero/ABordoPage";
 import PanelConductorPage from "./pages/conductor/PanelConductorPage";
 import AdminPanelPage from "./pages/admin/Adminpanelpage";
+import PerfilPage from "./pages/perfil/PerfilPage";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
 
         <Route path="/conductor" element={<PanelConductorPage />} />
         <Route path="/admin" element={<AdminPanelPage/>}/>
+        <Route path="/perfil" element={<PerfilPage/>}/>
   
       </Routes>
     </BrowserRouter>

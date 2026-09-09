@@ -36,10 +36,10 @@ export function SolicitudRow({ solicitud, onVer }) {
         <p className="text-texto-principal text-base sm:text-lg font-bold truncate">
           {apellido}, {nombre}
         </p>
-        <p className="text-acento-secundario text-sm sm:text-base">
+        <p className="text-texto-secundario text-sm sm:text-base">
           DNI: {formatearDNI(dni)}
         </p>
-        <p className="text-acento-secundario/80 text-xs sm:text-sm">
+        <p className="text-texto-secundario text-xs sm:text-sm">
           Enviada: {formatearFechaEnvio(fechaHoraRegistro)}
         </p>
       </div>

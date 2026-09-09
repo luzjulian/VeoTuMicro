@@ -96,7 +96,7 @@ export default function AdminPanelPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-texto-principal">
               Veo Tu Micro
             </h1>
-            <p className="text-acento-secundario text-sm sm:text-base">
+            <p className="text-texto-secundario text-sm sm:text-base">
               Panel administrativo
             </p>
           </div>

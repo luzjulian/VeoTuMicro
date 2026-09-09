@@ -2,22 +2,96 @@
 @config "../tailwind.config.js";
 
 @custom-variant data-horizontal (&[data-orientation="horizontal"]);
-@custom-variant data-vertical (&[data-orientation="vertical"]);
+@custom-variant data-vertical   (&[data-orientation="vertical"]);
 
+/* ─────────────────────────────────────────────────────────────
+   @theme inline
+   Mapea las CSS custom-properties a utilities de Tailwind v4.
+   Así "bg-background", "text-foreground", "bg-primary", etc.
+   que usa shadcn/ui funcionan como clases reales.
+───────────────────────────────────────────────────────────── */
+@theme inline {
+  /* Layout */
+  --color-background:          var(--background);
+  --color-foreground:          var(--foreground);
+
+  /* Superficie / muted */
+  --color-muted:               var(--muted);
+  --color-muted-foreground:    var(--muted-foreground);
+
+  /* Componentes */
+  --color-border:              var(--border);
+  --color-input:               var(--input);
+  --color-ring:                var(--ring);
+
+  /* Primario → acento-primario del proyecto */
+  --color-primary:             var(--primary);
+  --color-primary-foreground:  var(--primary-foreground);
+
+  /* Secundario → acento-secundario */
+  --color-secondary:           var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  /* Destructivo → estado-error */
+  --color-destructive:         var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  /* Radios */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   :root  (siempre dark — toda la app vive en dark mode)
+   Valores en hsl() completo para compatibilidad con Tailwind v4.
+   Los tokens propios del proyecto se mapean a los nombres
+   que shadcn/ui espera (primary, muted, destructive, etc.)
+───────────────────────────────────────────────────────────── */
+:root {
+  /* Fondo principal → background */
+  --background:           hsl(236 37% 16%);   /* #1A1C38 */
+  --foreground:           hsl(21  50% 90%);   /* #F2E1D8 */
+
+  /* Superficies → muted / input */
+  --muted:                hsl(236 38% 25%);   /* #282B59 superficie-primaria */
+  --muted-foreground:     hsl(248 72% 82%);   /* #B7AEF2 acento-primario suavizado */
+
+  /* Bordes e inputs */
+  --border:               hsl(237 36% 40%);   /* #42468C superficie-media */
+  --input:                hsl(236 38% 25%);   /* #282B59 */
+
+  /* Foco / ring */
+  --ring:                 hsl(248 72% 82%);   /* #B7AEF2 acento-primario */
+
+  /* Primary → acento-primario */
+  --primary:              hsl(248 72% 82%);   /* #B7AEF2 */
+  --primary-foreground:   hsl(236 37% 16%);   /* #1A1C38 texto sobre primary */
+
+  /* Secondary → acento-secundario */
+  --secondary:            hsl(237 56% 66%);   /* #777CD9 */
+  --secondary-foreground: hsl(21  50% 90%);   /* #F2E1D8 */
+
+  /* Destructive → estado-error */
+  --destructive:          hsl(0   85% 71%);   /* #F47474 */
+  --destructive-foreground: hsl(236 37% 16%); /* #1A1C38 */
+
+  /* Radio base */
+  --radius: 0.5rem;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Base global
+───────────────────────────────────────────────────────────── */
 @layer base {
-  /* Forzamos el fondo oscuro y la tipografía en todo el cuerpo de la app */
+  *, *::before, *::after {
+    border-color: var(--border);
+  }
+
   body {
     @apply bg-fondo-principal text-texto-principal antialiased min-h-screen overflow-x-hidden;
     margin: 0;
-  }
-
-  /* Variables mínimas que shadcn/ui necesita internamente para no romperse */
-  :root {
-    --background: 235 36% 16%;
-    --foreground: 22 47% 90%;
-    --border: 235 36% 25%;
-    --ring: 251 74% 83%;
-    --radius: 0.5rem;
+    font-family: 'Geist Variable', sans-serif;
   }
 }
-

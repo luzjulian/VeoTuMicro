@@ -1,13 +1,144 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// backend/prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------
+// ENTIDADES PRINCIPALES Y HERENCIA (Persona)
+// ---------------------------------------------------------
+
+model Cuenta {
+  oid           Int      @id @default(autoincrement())
+  dni           String   // Restricción @unique eliminada
+  nombreUsuario String   @unique // Mantenemos el usuario único para el login
+  contrasenia   String
+  
+  // Relación 1:1 con Persona usando OID
+  personaOid    Int      @unique
+  persona       Persona  @relation(fields: [personaOid], references: [oid])
+}
+
+model Persona {
+  oid             Int      @id @default(autoincrement())
+  dni             String   // Restricción @unique eliminada
+  nombreApellido  String   // No es único, permitiendo homónimos
+  fechaNacimiento DateTime
+
+  // Relaciones
+  cuenta          Cuenta?
+  telefonos       Telefono[]
+  
+  // Implementación de herencia (Roles)
+  pasajero        Pasajero?
+  chofer          Chofer?
+  administrativo  Administrativo?
+}
+
+model Telefono {
+  oid         Int      @id @default(autoincrement())
+  nroTelefono String
+  
+  personaOid  Int
+  persona     Persona  @relation(fields: [personaOid], references: [oid])
+
+  // Restricción para no cargar dos veces el mismo número a la misma persona
+  @@unique([nroTelefono, personaOid]) 
+}
+
+// ---------------------------------------------------------
+// ROLES (Subtipos de Persona)
+// ---------------------------------------------------------
+
+model Pasajero {
+  oid                     Int      @id @default(autoincrement())
+  certificadoDiscapacidad String
+  
+  personaOid              Int      @unique
+  persona                 Persona  @relation(fields: [personaOid], references: [oid])
+  
+  adminOid                Int?     // Opcional: nulo si está pendiente de validación
+  administrativo          Administrativo? @relation(fields: [adminOid], references: [oid])
+  
+  viajes                  Viaje[]
+}
+
+model Chofer {
+  oid                 Int      @id @default(autoincrement())
+  nroLicenciaConducir String
+  
+  personaOid          Int      @unique
+  persona             Persona  @relation(fields: [personaOid], references: [oid])
+  
+  conduce             Conduce[]
+}
+
+model Administrativo {
+  oid                 Int        @id @default(autoincrement())
+  legajo              String     @unique
+  
+  personaOid          Int        @unique
+  persona             Persona    @relation(fields: [personaOid], references: [oid])
+  
+  pasajerosValidados  Pasajero[]
+}
+
+// ---------------------------------------------------------
+// DOMINIO DEL NEGOCIO (Transporte y Viajes)
+// ---------------------------------------------------------
+
+model Linea {
+  oid      Int       @id @default(autoincrement())
+  nroLinea String
+  ramal    String
+  
+  conduce  Conduce[]
+
+  // Mantenemos la regla de unicidad compuesta del DER original
+  @@unique([nroLinea, ramal]) 
+}
+
+model Conduce {
+  oid             Int       @id @default(autoincrement())
+  fechaHoraInicio DateTime
+  fechaHoraFin    DateTime? 
+  
+  choferOid       Int
+  chofer          Chofer    @relation(fields: [choferOid], references: [oid])
+  
+  lineaOid        Int
+  linea           Linea     @relation(fields: [lineaOid], references: [oid])
+  
+  viajes          Viaje[]
+}
+
+model ParadaAscenso {
+  oid       Int      @id @default(autoincrement())
+  nroParada String   @unique
+  latitud   Float
+  longitud  Float
+  
+  viajes    Viaje[]
+}
+
+model Viaje {
+  oid             Int       @id @default(autoincrement())
+  numeroSolicitud String    @unique @default(uuid())
+  fechaHoraInicio DateTime  @default(now())
+  fechaHoraFin    DateTime?
+  estado          String    @default("PENDIENTE")
+  
+  paradaOid       Int
+  parada          ParadaAscenso @relation(fields: [paradaOid], references: [oid])
+  
+  pasajeroOid     Int
+  pasajero        Pasajero      @relation(fields: [pasajeroOid], references: [oid])
+  
+  conduceOid      Int
+  conduce         Conduce       @relation(fields: [conduceOid], references: [oid])
 }

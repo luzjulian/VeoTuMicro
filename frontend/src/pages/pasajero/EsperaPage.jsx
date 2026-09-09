@@ -66,7 +66,7 @@ export default function EsperaPage() {
 
     if (evento === "colectivo_llego") {
       setColectivoLlego(true);
-      anunciar("Tu colectivo ha llegado, subí", { onEnd: () => preguntarAbordaje() });
+      anunciar("Tu colectivo ha llegado, ingresa", { onEnd: () => preguntarAbordaje() });
     }
 
     if (evento === "eta_recalculada") {

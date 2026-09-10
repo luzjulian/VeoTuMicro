@@ -7,11 +7,11 @@ import { LoginForm } from "@/components/auth/LoginForm";
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState("pasajero");
 
-const handleLogin = (data) => {
-  // data = { rol, email, password }
-  // Acá después conectamos el fetch/axios al backend
-  console.log("Login submit:", data);
-};
+  const handleLogin = (data) => {
+    // data = { rol, email, password }
+    // Acá después conectamos el fetch/axios al backend
+    console.log("Login submit:", data);
+  };
 
   return (
     <div className="min-h-dvh bg-fondo-principal flex flex-col items-center justify-center p-4 sm:p-6">

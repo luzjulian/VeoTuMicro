@@ -7,11 +7,11 @@ import { LoginForm } from "@/components/auth/LoginForm";
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState("pasajero");
 
-const handleLogin = (data) => {
-  // data = { rol, email, password }
-  // Acá después conectamos el fetch/axios al backend
-  console.log("Login submit:", data);
-};
+  const handleLogin = (data) => {
+    // data = { rol, email, password }
+    // Acá después conectamos el fetch/axios al backend
+    console.log("Login submit:", data);
+  };
 
   return (
     <div className="min-h-dvh bg-fondo-principal flex flex-col items-center justify-center p-4 sm:p-6">
@@ -32,19 +32,19 @@ const handleLogin = (data) => {
           <TabsList className="grid w-full grid-cols-3 mb-6 bg-superficie-primaria h-auto min-h-14 rounded-lg gap-1 p-1">
             <TabsTrigger
               value="pasajero"
-              className="data-[state=active]:bg-acento-primario data-[state=active]:text-fondo-principal data-[state=active]:shadow-lg data-[state=active]:shadow-acento-primario/40 data-[state=active]:scale-[1.02] text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
+              className="data-active:bg-acento-primario data-active:text-fondo-principal data-active:ring-2 data-active:ring-white data-active:scale-[1.02] text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
             >
               Pasajero
             </TabsTrigger>
             <TabsTrigger
               value="conductor"
-              className="data-[state=active]:bg-acento-primario data-[state=active]:text-fondo-principal data-[state=active]:shadow-lg data-[state=active]:shadow-acento-primario/40 data-[state=active]:scale-[1.02] text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
+              className="data-active:bg-acento-primario data-active:text-fondo-principal data-active:ring-2 data-active:ring-white data-active:scale-[1.02] text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
             >
               Conductor
             </TabsTrigger>
             <TabsTrigger
               value="admin"
-              className="data-[state=active]:bg-acento-primario data-[state=active]:text-fondo-principal data-[state=active]:shadow-lg data-[state=active]:shadow-acento-primario/40 data-[state=active]:scale-[1.02] text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
+              className="data-active:bg-acento-primario data-active:text-fondo-principal data-active:ring-2 data-active:ring-white data-active:scale-[1.02] text-texto-principal text-sm sm:text-lg font-bold rounded-md py-2 sm:py-0 whitespace-nowrap transition-all"
             >
               Admin
             </TabsTrigger>

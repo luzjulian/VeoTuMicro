@@ -57,13 +57,48 @@ docker-compose down
 
 ```
 src/
-├── app.js           # Configuración de la aplicación Express
-├── server.js        # Punto de entrada del servidor
-├── controllers/     # Manejadores de solicitudes
-├── routes/          # Definiciones de rutas API
-├── services/        # Lógica de negocio y consultas a BD
-└── middleware/      # Middleware personalizado
+├── app.js                  # Configuración de Express (cors, helmet, cookies, rutas)
+├── server.js               # Punto de entrada del servidor
+│
+├── config/
+│   ├── env.js              # Validación de variables de entorno con Zod
+│   └── prisma.js           # Instancia única de PrismaClient
+│
+├── lib/                    # Utilidades reutilizables sin lógica de negocio
+│   ├── http-errors.js      # Clases de error con status HTTP
+│   ├── password.js         # Hash y verificación de contraseñas con bcrypt
+│   ├── tokens.js           # Generación y verificación de JWT y refresh tokens
+│   └── auth-cookies.js     # Seteo y limpieza de cookies HttpOnly
+│
+├── domain/                 # Schemas de validación (Zod) y mappers de salida
+│   └── cuenta.js           # loginSchema, registerSchema
+│
+├── middlewares/
+│   ├── error-handler.js    # Manejo centralizado de errores
+│   ├── validate.js         # Validación de body con Zod
+│   ├── require-auth.js     # Verificación de token y restricción por rol
+│   └── rate-limit.js       # Rate limiting global y para auth
+│
+├── controllers/            # Traducen HTTP ↔ servicio (req/res, cookies)
+├── services/               # Lógica de negocio y acceso a la BD (Prisma)
+└── routes/                 # Definición de rutas y middlewares por módulo
 ```
+## Endpoints de API
+
+### Auth — `/api/auth`
+
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| POST | `/api/auth/register` | Registra un nuevo usuario con rol | No |
+| POST | `/api/auth/login` | Inicia sesión y setea cookies | No |
+| POST | `/api/auth/refresh` | Renueva el access token | Cookie |
+| POST | `/api/auth/logout` | Cierra sesión y revoca el refresh token | Cookie |
+
+#### Register — campos según rol
+
+- `pasajero` → `certificadoDiscapacidad`, `adminOid` (opcional)
+- `chofer` → `nroLicenciaConducir`
+- `administrativo` → `legajo`
 
 ## Base de Datos
 

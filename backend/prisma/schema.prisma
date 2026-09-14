@@ -14,14 +14,26 @@ datasource db {
 // ---------------------------------------------------------
 
 model Cuenta {
-  oid           Int      @id @default(autoincrement())
-  dni           String   // Restricción @unique eliminada
-  nombreUsuario String   @unique // Mantenemos el usuario único para el login
+  oid           Int            @id @default(autoincrement())
+  dni           String
+  nombreUsuario String         @unique
   contrasenia   String
-  
+
   // Relación 1:1 con Persona usando OID
-  personaOid    Int      @unique
-  persona       Persona  @relation(fields: [personaOid], references: [oid])
+  personaOid    Int            @unique
+  persona       Persona        @relation(fields: [personaOid], references: [oid])
+
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id         Int       @id @default(autoincrement())
+  tokenHash  String    @unique
+  cuentaOid  Int
+  cuenta     Cuenta    @relation(fields: [cuentaOid], references: [oid])
+  expiresAt  DateTime
+  revokedAt  DateTime?           // null = válido | con fecha = revocado
+  createdAt  DateTime  @default(now())
 }
 
 model Persona {

@@ -1,7 +1,8 @@
-const app = require('./app');
+const { env }       = require('./config/env');
+const { createApp } = require('./app');
 
-const PORT = process.env.PORT || 5000;
+const app = createApp();
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+app.listen(env.PORT, () => {
+  console.log(`🚀 API escuchando en http://localhost:${env.PORT} (${env.NODE_ENV})`);
 });

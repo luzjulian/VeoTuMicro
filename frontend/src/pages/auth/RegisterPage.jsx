@@ -41,10 +41,9 @@ export default function RegisterPage() {
       return;
     }
 
-    // Acá después conectamos con el backend (multipart/form-data por el PDF)
     console.log("Registro submit:", { ...formData, certificado });
 
-    navigate("/registro/pendiente"); // cuando el backend confirme el alta
+    navigate("/registro/pendiente");
   };
 
   return (
@@ -61,49 +60,65 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-6 w-full" noValidate>
 
           {error && (
-            <p role="alert" aria-live="polite" className="text-estado-error text-base font-medium">
+            <p role="alert" id="form-error" className="text-estado-error text-base font-medium">
               {error}
             </p>
           )}
 
+          {/* Nombre */}
           <div className="space-y-2">
-            <Label htmlFor="nombre" className="text-texto-principal text-lg">
+            <Label id="nombre-label" htmlFor="nombre" className="text-texto-principal text-lg">
               Nombre completo
             </Label>
+            <p id="nombre-hint" className="text-acento-secundario text-sm">
+              Ingresa tu nombre y apellido.
+            </p>
             <Input
               id="nombre"
               name="nombre"
               type="text"
               value={formData.nombre}
               onChange={handleChange}
-              placeholder="Tu nombre y apellido"
+              placeholder="Pepe Argento"
               required
               aria-required="true"
+              aria-labelledby="nombre-label nombre-hint"
+              aria-describedby={error ? "form-error" : undefined}
               className="bg-superficie-primaria border-acento-secundario text-texto-principal placeholder:text-acento-secundario/50 text-lg h-12"
             />
           </div>
 
+          {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-texto-principal text-lg">
+            <Label id="email-label" htmlFor="email" className="text-texto-principal text-lg">
               Correo electrónico
             </Label>
+            <p id="email-hint" className="text-acento-secundario text-sm">
+              Ingresa tu correo electrónico.
+            </p>
             <Input
               id="email"
               name="email"
               type="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="tu@correo.com"
+              placeholder="pepeargento@correo.com"
               required
               aria-required="true"
+              aria-labelledby="email-label email-hint"
+              aria-describedby={error ? "form-error" : undefined}
               className="bg-superficie-primaria border-acento-secundario text-texto-principal placeholder:text-acento-secundario/50 text-lg h-12"
             />
           </div>
 
+          {/* Password */}
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-texto-principal text-lg">
+            <Label id="password-label" htmlFor="password" className="text-texto-principal text-lg">
               Contraseña
             </Label>
+            <p id="password-hint" className="text-acento-secundario text-sm">
+              Ingresa una contraseña.
+            </p>
             <Input
               id="password"
               name="password"
@@ -113,14 +128,20 @@ export default function RegisterPage() {
               placeholder="••••••••"
               required
               aria-required="true"
+              aria-labelledby="password-label password-hint"
+              aria-describedby={error ? "form-error" : undefined}
               className="bg-superficie-primaria border-acento-secundario text-texto-principal placeholder:text-acento-secundario/50 text-lg h-12"
             />
           </div>
 
+          {/* Confirmar password */}
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword" className="text-texto-principal text-lg">
+            <Label id="confirmPassword-label" htmlFor="confirmPassword" className="text-texto-principal text-lg">
               Confirmar contraseña
             </Label>
+            <p id="confirmPassword-hint" className="text-acento-secundario text-sm">
+              Repite la contraseña.
+            </p>
             <Input
               id="confirmPassword"
               name="confirmPassword"
@@ -130,15 +151,26 @@ export default function RegisterPage() {
               placeholder="••••••••"
               required
               aria-required="true"
+              aria-labelledby="confirmPassword-label confirmPassword-hint"
+              aria-describedby={error ? "form-error" : undefined}
               className="bg-superficie-primaria border-acento-secundario text-texto-principal placeholder:text-acento-secundario/50 text-lg h-12"
             />
           </div>
 
+          {/* Certificado */}
           <div className="space-y-2">
-            <Label className="text-texto-principal text-lg">
+            <Label id="certificado-label" htmlFor="certificado" className="text-texto-principal text-lg">
               Certificado de discapacidad (PDF)
             </Label>
-            <FileUpload onFileSelect={setCertificado} />
+            <p id="certificado-hint" className="text-acento-secundario text-sm">
+              Adjunta tu certificado de discapacidad en formato PDF.
+            </p>
+            <FileUpload
+              id="certificado"
+              onFileSelect={setCertificado}
+              aria-labelledby="certificado-label certificado-hint"
+              aria-describedby={error ? "form-error" : undefined}
+            />
           </div>
 
           <Button

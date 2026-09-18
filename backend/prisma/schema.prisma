@@ -138,6 +138,9 @@ model ParadaAscenso {
   viajes    Viaje[]
 }
 
+
+//Estados del viaje: PENDIENTE/ACEPTADO/CANCELADO 
+
 model Viaje {
   oid             Int       @id @default(autoincrement())
   numeroSolicitud String    @unique @default(uuid())

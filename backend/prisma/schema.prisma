@@ -139,7 +139,7 @@ model ParadaAscenso {
 }
 
 
-//Estados del viaje: PENDIENTE/ACEPTADO/CANCELADO 
+//Estados del viaje: PENDIENTE/CONFIRMADO/ABORDO/FINALIZADO/CANCELADO
 
 model Viaje {
   oid             Int       @id @default(autoincrement())

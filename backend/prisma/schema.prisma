@@ -139,21 +139,28 @@ model ParadaAscenso {
 }
 
 
-//Estados del viaje: PENDIENTE/CONFIRMADO/ABORDO/FINALIZADO/CANCELADO
+enum EstadoViaje {
+  PENDIENTE
+  CONFIRMADO
+  ABORDO
+  FINALIZADO
+  CANCELADO
+}
 
 model Viaje {
-  oid             Int       @id @default(autoincrement())
-  numeroSolicitud String    @unique @default(uuid())
-  fechaHoraInicio DateTime  @default(now())
+  oid             Int          @id @default(autoincrement())
+  numeroSolicitud String       @unique @default(uuid())
+  fechaHoraInicio DateTime     @default(now())
   fechaHoraFin    DateTime?
-  estado          String    @default("PENDIENTE")
-  
+  estado          EstadoViaje  @default(PENDIENTE)
+  destino         String       
+
   paradaOid       Int
   parada          ParadaAscenso @relation(fields: [paradaOid], references: [oid])
-  
+
   pasajeroOid     Int
   pasajero        Pasajero      @relation(fields: [pasajeroOid], references: [oid])
-  
+
   conduceOid      Int
   conduce         Conduce       @relation(fields: [conduceOid], references: [oid])
 }

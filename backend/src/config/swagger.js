@@ -21,6 +21,12 @@ const options = {
           in: 'cookie',
           name: 'accessToken',
         },
+        devAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'X-Dev-User',
+          description: `Pasajero: {"sub":"2","nombreUsuario":"pasajero.ana","rol":"pasajero"}\n\nChofer: {"sub":"4","nombreUsuario":"chofer.carlos","rol":"chofer"}`,
+        },
       },
       schemas: {
 

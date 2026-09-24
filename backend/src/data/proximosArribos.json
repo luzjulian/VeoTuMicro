@@ -1,0 +1,27 @@
+{
+  "P001": [
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 5,  "dniChofer": "30111222" },
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 14, "dniChofer": "30333444" },
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 8,  "dniChofer": "30555666" }
+  ],
+  "P002": [
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 3,  "dniChofer": "30555666" },
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 18, "dniChofer": "30777888" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 11, "dniChofer": "30999000" }
+  ],
+  "P003": [
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 7,  "dniChofer": "30111222" },
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 21, "dniChofer": "30333444" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 6,  "dniChofer": "30999000" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 20, "dniChofer": "30888111" }
+  ],
+  "P004": [
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 4,  "dniChofer": "30777888" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 9,  "dniChofer": "30999000" }
+  ],
+  "P005": [
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 2,  "dniChofer": "30333444" },
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 12, "dniChofer": "30555666" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 7,  "dniChofer": "30888111" }
+  ]
+}

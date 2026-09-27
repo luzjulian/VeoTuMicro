@@ -114,6 +114,8 @@ const iniciarViaje = async ({ cuentaOid, idempotencyKey, nroParada, nroLinea, ra
     },
   });
 
+  const nombrePasajero = cuenta?.persona?.nombreApellido ?? 'Pasajero';
+
   const pasajero = cuenta?.persona?.pasajero;
   if (!pasajero) {
     throw new ForbiddenError('Tu cuenta no tiene un perfil de pasajero');
@@ -170,9 +172,12 @@ const iniciarViaje = async ({ cuentaOid, idempotencyKey, nroParada, nroLinea, ra
   const conductorUsername = chofer.persona.cuenta?.nombreUsuario;
   if (conductorUsername) {
     io.to(`conductor:${conductorUsername}`).emit('nueva:solicitud', {
-      nroViaje: viaje.oid,
-      parada:   nroParada,
+      nroViaje:       viaje.oid,
+      parada:         nroParada,
+      paradaLatitud:  parada.latitud,
+      paradaLongitud: parada.longitud,
       destino,
+      pasajero:       nombrePasajero,
     });
   }
 
@@ -348,6 +353,8 @@ const confirmarAscenso = async ({ cuentaOid, nroViaje, io }) => {
   if (conductorUsername) {
     io.to(`conductor:${conductorUsername}`).emit('pasajero:abordo', {
       nroViaje,
+      destino:  viaje.destino,
+      pasajero: viaje.pasajero.persona?.nombreApellido ?? 'Pasajero',
     });
   }
 

@@ -1,4 +1,5 @@
 // src/components/conductor/SolicitudItem.jsx
+import { MapPin, User, ArrowRight, Clock } from 'lucide-react';
 import { BadgeEstado } from "@/components/conductor/BadgeEstado";
 import { tiempoTranscurrido } from "@/utils/tiempoTranscurrido";
 
@@ -39,24 +40,32 @@ export function SolicitudItem({ solicitud, onSeleccionar }) {
 
       {/* Datos */}
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-texto-principal text-sm">
+        {/* Nombre del pasajero */}
+        <p className="font-bold text-texto-principal text-sm flex items-center gap-1">
+          <User className="h-3.5 w-3.5 text-acento-secundario shrink-0" aria-hidden="true" />
           {solicitud.pasajero}
         </p>
-        <p className="text-xs text-acento-secundario mt-0.5">
-          {solicitud.nroLinea} · {solicitud.paradaSubida} → {solicitud.paradaDestino}
+
+        {/* Origen → Destino */}
+        <p className="text-xs text-acento-secundario mt-1 flex items-center gap-1 flex-wrap">
+          <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
+          <span className="truncate max-w-[9rem]">{solicitud.paradaSubida}</span>
+          <ArrowRight className="h-3 w-3 shrink-0" aria-hidden="true" />
+          <span className="truncate max-w-[9rem]">{solicitud.paradaDestino}</span>
         </p>
-        <div className="flex flex-wrap gap-2 mt-2">
+
+        {/* Tiempo + badges */}
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          <span className="text-xs text-acento-secundario flex items-center gap-0.5">
+            <Clock className="h-3 w-3" aria-hidden="true" />
+            {tiempoTranscurrido(solicitud.fechaHoraInicio)}
+          </span>
           {solicitud.discapacidadVisual && (
             <BadgeEstado variante="discapacidad" />
           )}
           <BadgeEstado variante={solicitud.estado} />
         </div>
       </div>
-
-      {/* Tiempo */}
-      <span className="text-xs text-acento-secundario whitespace-nowrap shrink-0">
-        {tiempoTranscurrido(solicitud.fechaHoraInicio)}
-      </span>
     </div>
   );
 }

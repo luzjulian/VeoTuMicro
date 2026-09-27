@@ -6,7 +6,8 @@ import {
   verificarPermisosGPS,
   esperarPermisoGPS,
 } from "@/hooks/useGeolocation";
-import { geocodificarCoordenadas } from "@/services/mock/mockGeocodingService";
+// 🔁 Swap: mock → servicio real (Nominatim/OSM)
+import { geocodificarCoordenadas } from "@/services/geocodingService";
 
 const MAX_INTENTOS_GPS = 3;
 
@@ -21,9 +22,15 @@ const MAX_INTENTOS_GPS = 3;
  * useSpeechRecognition o useSpeechSynthesis.
  */
 export function useGPSFlow() {
-  const [faseGPS, setFaseGPS] = useState(null);
+  const [faseGPS, setFaseGPS]     = useState(null);
   // null | "obteniendo" | "error_permisos" | "error_tecnico" | "exito"
   const [paradaGPS, setParadaGPS] = useState(null);
+
+  /** Resetea el estado GPS para permitir un nuevo intento desde cero. */
+  const resetGPS = useCallback(() => {
+    setFaseGPS(null);
+    setParadaGPS(null);
+  }, []);
 
   const { speak } = useSpeechSynthesis();
   const { obtenerUbicacion } = useGeolocation();
@@ -57,7 +64,7 @@ export function useGPSFlow() {
         setParadaGPS(direccion);
         setFaseGPS("exito");
 
-        await hablar("Ubicación obtenida. Dirigiendo a la selección de destino");
+        await hablar("Ubicación obtenida");
 
         return { coords, direccion };
       } catch (err) {
@@ -102,5 +109,5 @@ export function useGPSFlow() {
     }
   }, [obtenerUbicacion, hablar]);
 
-  return { faseGPS, paradaGPS, iniciarFlujoGPS };
+  return { faseGPS, paradaGPS, iniciarFlujoGPS, resetGPS };
 }

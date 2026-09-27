@@ -1,11 +1,12 @@
 // src/hooks/useConductorRealtime.js
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useVoiceQueue } from "@/hooks/useVoiceQueue";
+// 🔁 Swap: mock → servicio real (misma interfaz)
 import {
   suscribirsePanelConductor,
   simularAbordajeMock,
   notificarRechazoMock,
-} from "@/services/mock/mockConductorService";
+} from "@/services/conductorService";
 
 // Cada cuánto se repite el recordatorio de bajada hasta que el conductor
 // confirme el descenso. El repo comprime el tiempo en las demos; si querés
@@ -74,6 +75,11 @@ export function useConductorRealtime() {
       }
 
       if (evento === "pasajero_a_bordo") {
+        // Mezclar el payload con la solicitud almacenada en estado para que
+        // el recordatorio tenga todos los datos (nombre, destino real, etc.)
+        const solicitudGuardada = solicitudesRef.current.find(
+          (s) => s.numeroSolicitud === payload.numeroSolicitud
+        );
         setSolicitudes((prev) =>
           prev.map((s) =>
             s.numeroSolicitud === payload.numeroSolicitud
@@ -81,7 +87,7 @@ export function useConductorRealtime() {
               : s
           )
         );
-        abrirRecordatorio(payload);
+        abrirRecordatorio({ ...(solicitudGuardada ?? {}), ...payload });
       }
     },
     [encolar, abrirRecordatorio]

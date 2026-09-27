@@ -3,26 +3,39 @@ import { useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { VoiceStatusCircle } from "@/components/pasajero/VoiceStatusCircle";
 import { useVoiceFreeTextCapture } from "@/hooks/useVoiceFreeTextCapture";
-import { crearSolicitudMock } from "@/services/mock/mockRealtimeService";
+// 🔁 Swap: mock → servicio real (misma interfaz, ahora async)
+import { crearSolicitud } from "@/services/pasajeroService";
 
 export default function SeleccionDestinoPage() {
   const { viaje, actualizarViaje } = useOutletContext();
   const navigate = useNavigate();
 
   const [destinoManual, setDestinoManual] = useState("");
+  const [cargando, setCargando]           = useState(false);
+  const [errorApi, setErrorApi]           = useState(null);
 
-  const confirmarDestino = (direccion) => {
-    const solicitud = crearSolicitudMock({
-      nroLinea: viaje.nroLinea,
-      paradaSubida: viaje.paradaSubida,
-      paradaDestino: direccion,
-    });
-    actualizarViaje({
-      paradaDestino: direccion,
-      numeroSolicitud: solicitud.numeroSolicitud,
-      estadoViaje: "en_espera",
-    });
-    navigate("/pasajero/espera");
+  const confirmarDestino = async (direccion) => {
+    setCargando(true);
+    setErrorApi(null);
+    try {
+      const { nroViaje } = await crearSolicitud({
+        nroParada: viaje.nroParada,
+        nroLinea:  viaje.nroLinea,
+        ramal:     viaje.ramal,
+        destino:   direccion,
+      });
+      actualizarViaje({
+        paradaDestino:   direccion,
+        numeroSolicitud: nroViaje,   // ID autoincremental (Int) del backend
+        estadoViaje:     "en_espera",
+      });
+      navigate("/pasajero/espera");
+    } catch (err) {
+      console.error('[SeleccionDestino] Error al crear viaje:', err.message);
+      setErrorApi("No se pudo solicitar el viaje. Verificá tu conexión e intentá de nuevo.");
+    } finally {
+      setCargando(false);
+    }
   };
 
   const { valor, fallbackActivo, escuchando, confirmarManual, reintentarPorToque } =
@@ -61,19 +74,26 @@ export default function SeleccionDestinoPage() {
       </p>
 
       <div className="space-y-3 mb-6">
-        <Fila etiqueta="Línea" valor={`${viaje.nroLinea} — ${viaje.ramal}`} />
+        <Fila etiqueta="Línea" valor={`Línea ${viaje.nroLinea} — Ramal ${viaje.ramal}`} />
         <Fila etiqueta="Subida" valor={viaje.paradaSubida} />
         {valor && <Fila etiqueta="Destino ingresado" valor={valor} />}
       </div>
+
+      {errorApi && (
+        <div role="alert" className="bg-estado-error/10 border border-estado-error/40 rounded-lg p-3 mb-4 text-sm text-estado-error">
+          {errorApi}
+        </div>
+      )}
 
       <div className="flex-1" />
 
       <button
         type="button"
         onClick={() => navigate("/pasajero/linea")}
-        className="w-full border-2 border-acento-secundario text-acento-primario font-bold text-lg h-12 rounded-md mt-3"
+        disabled={cargando}
+        className="w-full border-2 border-acento-secundario text-acento-primario font-bold text-lg h-12 rounded-md mt-3 disabled:opacity-50"
       >
-        Volver
+        {cargando ? "Enviando solicitud…" : "Volver"}
       </button>
 
       {fallbackActivo && (

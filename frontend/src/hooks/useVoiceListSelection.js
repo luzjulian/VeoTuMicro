@@ -119,6 +119,19 @@ export function useVoiceListSelection({
     pedirSeleccion(mensajePregunta);
   }, [pedirSeleccion, mensajePregunta]);
 
+  /**
+   * Limpia la selección confirmada y reinicia el ciclo de escucha.
+   * Llamar desde el exterior cuando un flujo posterior falla y se necesita
+   * que el usuario elija de nuevo (ej: cierre del modal de error).
+   */
+  const resetSeleccion = useCallback(() => {
+    intentosRef.current = 0;
+    setIntentos(0);
+    setSeleccion(null);
+    setFallbackActivo(false);
+    pedirSeleccion(mensajePregunta);
+  }, [pedirSeleccion, mensajePregunta]);
+
   return {
     seleccion,
     intentos,
@@ -126,5 +139,6 @@ export function useVoiceListSelection({
     escuchando: isListening || escuchandoConfirmacion,
     seleccionarManual,
     reintentarPorToque,
+    resetSeleccion,
   };
 }

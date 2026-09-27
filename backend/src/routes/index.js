@@ -3,14 +3,14 @@
 const { Router }    = require('express');
 const authRoutes    = require('./auth.routes');
 const viajesRoutes  = require('./viajes.routes');
+const lineasRoutes  = require('./lineas.routes');
+const paradasRoutes = require('./paradas.routes');
 
 const router = Router();
 
-router.use('/auth',   authRoutes);
-router.use('/viajes', viajesRoutes);
-
-// Acá se van a ir montando los demás módulos:
-// router.use('/lineas',   require('./linea.routes'));
-// router.use('/paradas',  require('./parada.routes'));
+router.use('/auth',    authRoutes);
+router.use('/viajes',  viajesRoutes);
+router.use('/lineas',  lineasRoutes);
+router.use('/paradas', paradasRoutes);
 
 module.exports = router;

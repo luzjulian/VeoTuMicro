@@ -38,8 +38,8 @@ model RefreshToken {
 
 model Persona {
   oid             Int      @id @default(autoincrement())
-  dni             String   // Restricción @unique eliminada
-  nombreApellido  String   // No es único, permitiendo homónimos
+  dni             String   @unique
+  nombreApellido  String
   fechaNacimiento DateTime
 
   // Relaciones
@@ -108,11 +108,11 @@ model Linea {
   oid      Int       @id @default(autoincrement())
   nroLinea String
   ramal    String
-  
+
   conduce  Conduce[]
 
   // Mantenemos la regla de unicidad compuesta del DER original
-  @@unique([nroLinea, ramal]) 
+  @@unique([nroLinea, ramal])
 }
 
 model Conduce {
@@ -149,11 +149,11 @@ enum EstadoViaje {
 
 model Viaje {
   oid             Int          @id @default(autoincrement())
-  numeroSolicitud String       @unique @default(uuid())
+  idempotencyKey  String       @unique   // Clave de idempotencia enviada por el cliente
   fechaHoraInicio DateTime     @default(now())
   fechaHoraFin    DateTime?
   estado          EstadoViaje  @default(PENDIENTE)
-  destino         String       
+  destino         String       // Intersección de bajada, ej: "Calle 7 y 50"
 
   paradaOid       Int
   parada          ParadaAscenso @relation(fields: [paradaOid], references: [oid])

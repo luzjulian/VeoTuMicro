@@ -16,30 +16,44 @@ const hashPwd = (pwd) => bcrypt.hashSync(pwd, 10);
 // Datos de referencia
 // ---------------------------------------------------------------------------
 
-// Las 3 líneas que cubre el mock proximosArribos.json
+// Las 3 líneas que cubre el mock proximosArribos.json.
+// Nota: Persona.dni es @unique en el schema — los DNIs de esta lista no deben repetirse.
 const LINEAS = [
   { nroLinea: '307', ramal: 'A' },
   { nroLinea: '214', ramal: 'D' },
   { nroLinea: '202', ramal: 'B' },
 ];
 
-// Paradas en La Plata con coordenadas reales
+// Paradas distribuidas ~300 m alrededor de la ubicación de desarrollo.
+// P001 coincide con la ubicación GPS del tester → siempre será la "más cercana".
 // nroParada debe coincidir con las keys de proximosArribos.json
+// Dos grupos de paradas, uno por cada ubicación de testeo.
+// Dentro de cada grupo, la parada "exacta" tiene las 3 líneas (happy path)
+// y las adyacentes tienen líneas limitadas para probar el modal de error.
+//
+// Grupo 1 — ubicación 1 (-34.756477, -58.275477)
+//   P001 → en el punto exacto  → 307-A, 214-D, 202-B
+//   P002 → ~300 m al sur       → 307-A, 214-D        (202-B falla → error modal)
+//
+// Grupo 2 — ubicación 2 (-34.903712, -57.924803)
+//   P003 → en el punto exacto  → 307-A, 214-D, 202-B
+//   P004 → ~300 m al sur       → 307-A               (214-D y 202-B fallan)
+//   P005 → ~300 m al oeste     → 214-D, 202-B        (307-A falla)
 const PARADAS = [
-  { nroParada: 'P001', latitud: -34.9205, longitud: -57.9562 }, // 7 y 51
-  { nroParada: 'P002', latitud: -34.9192, longitud: -57.9584 }, // 1 y 60
-  { nroParada: 'P003', latitud: -34.9232, longitud: -57.9511 }, // 13 y 44
-  { nroParada: 'P004', latitud: -34.9278, longitud: -57.9670 }, // 44 y 6
-  { nroParada: 'P005', latitud: -34.9137, longitud: -57.9562 }, // 19 y 60
+  { nroParada: '0001', latitud: -34.756477, longitud: -58.275477 }, // ubicación 1 — exacta
+  { nroParada: '0002', latitud: -34.759177, longitud: -58.275477 }, // ubicación 1 — ~300 m sur
+  { nroParada: '0003', latitud: -34.903712, longitud: -57.924803 }, // ubicación 2 — exacta
+  { nroParada: '0004', latitud: -34.906412, longitud: -57.924803 }, // ubicación 2 — ~300 m sur
+  { nroParada: '0005', latitud: -34.903712, longitud: -57.928003 }, // ubicación 2 — ~300 m oeste
 ];
 
-// Choferes — los DNI deben coincidir con proximosArribos.json
+// Choferes — los DNI deben coincidir con proximosArribos.json y ser únicos en Persona
 const CHOFERES_DATA = [
   {
     dni: '30111222',
     nombreApellido: 'Carlos Rodríguez',
     fechaNacimiento: new Date('1985-03-15'),
-    nroLicenciaConducir: '12345689',
+    nroLicenciaConducir: 'LC-001-ARG',
     nombreUsuario: 'chofer.carlos',
     password: 'chofer1234',
     lineaIdx: 0, // 307-A
@@ -48,7 +62,7 @@ const CHOFERES_DATA = [
     dni: '30333444',
     nombreApellido: 'Mario Fernández',
     fechaNacimiento: new Date('1979-07-22'),
-    nroLicenciaConducir: '98765432',
+    nroLicenciaConducir: 'LC-002-ARG',
     nombreUsuario: 'chofer.mario',
     password: 'chofer1234',
     lineaIdx: 0, // 307-A
@@ -57,7 +71,7 @@ const CHOFERES_DATA = [
     dni: '30555666',
     nombreApellido: 'Lucas Gómez',
     fechaNacimiento: new Date('1990-11-30'),
-    nroLicenciaConducir: '24682468',
+    nroLicenciaConducir: 'LC-003-ARG',
     nombreUsuario: 'chofer.lucas',
     password: 'chofer1234',
     lineaIdx: 1, // 214-D
@@ -66,7 +80,7 @@ const CHOFERES_DATA = [
     dni: '30777888',
     nombreApellido: 'Pedro Martínez',
     fechaNacimiento: new Date('1982-06-10'),
-    nroLicenciaConducir: '98456875',
+    nroLicenciaConducir: 'LC-004-ARG',
     nombreUsuario: 'chofer.pedro',
     password: 'chofer1234',
     lineaIdx: 1, // 214-D
@@ -75,7 +89,7 @@ const CHOFERES_DATA = [
     dni: '30999000',
     nombreApellido: 'Jorge López',
     fechaNacimiento: new Date('1975-01-05'),
-    nroLicenciaConducir: '56876345',
+    nroLicenciaConducir: 'LC-005-ARG',
     nombreUsuario: 'chofer.jorge',
     password: 'chofer1234',
     lineaIdx: 2, // 202-B
@@ -84,7 +98,7 @@ const CHOFERES_DATA = [
     dni: '30888111',
     nombreApellido: 'Roberto Díaz',
     fechaNacimiento: new Date('1988-09-14'),
-    nroLicenciaConducir: '56987254',
+    nroLicenciaConducir: 'LC-006-ARG',
     nombreUsuario: 'chofer.roberto',
     password: 'chofer1234',
     lineaIdx: 2, // 202-B

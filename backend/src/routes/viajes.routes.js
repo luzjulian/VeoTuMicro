@@ -1,13 +1,14 @@
 // backend/src/routes/viajes.routes.js
 
-const { Router }           = require('express');
-const viajesController     = require('../controllers/viajes.controller');
+const { Router }               = require('express');
+const viajesController         = require('../controllers/viajes.controller');
 // 🔧 DEV: importando dev-auth mientras el módulo de auth está en construcción.
 // Cuando auth esté listo, cambiar esta línea por:
 // const { requireAuth, soloRol } = require('../middlewares/require-auth');
 const { requireAuth, soloRol } = require('../middlewares/dev-auth');
-const { validate }         = require('../middlewares/validate');
-const { iniciarViajeSchema } = require('../domain/viaje');
+const { validate }             = require('../middlewares/validate');
+const { iniciarViajeSchema }   = require('../domain/viaje');
+const { requireIdempotencyKey } = require('../middlewares/idempotency');
 
 const router = Router();
 
@@ -32,6 +33,18 @@ const router = Router();
  *     security:
  *       - cookieAuth: []
  *       - devAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: Idempotency-Key
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *           example: "a1b2c3d4-0000-4000-8000-000000000001"
+ *         description: >
+ *           UUID v4 generado por el cliente para evitar viajes duplicados.
+ *           Si se reintenta la misma petición con la misma key, el servidor
+ *           devuelve el viaje ya creado sin crear uno nuevo.
  *     requestBody:
  *       required: true
  *       content:
@@ -42,7 +55,7 @@ const router = Router();
  *             properties:
  *               nroParada:
  *                 type: string
- *                 example: "P001"
+ *                 example: "0001"
  *               nroLinea:
  *                 type: string
  *                 example: "307"
@@ -55,14 +68,35 @@ const router = Router();
  *     responses:
  *       201:
  *         description: Viaje creado — se notificó al conductor
+ *         headers:
+ *           Location:
+ *             description: URL del viaje recién creado
+ *             schema:
+ *               type: string
+ *               example: "/api/viajes/1"
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
  *                 nroViaje:
+ *                   type: integer
+ *                   example: 1
+ *                 estado:
  *                   type: string
- *                   example: "a3f1b2c4-..."
+ *                   example: "PENDIENTE"
+ *                 destino:
+ *                   type: string
+ *                   example: "7 y 47"
+ *                 nroParada:
+ *                   type: string
+ *                   example: "0001"
+ *                 nroLinea:
+ *                   type: string
+ *                   example: "307"
+ *                 ramal:
+ *                   type: string
+ *                   example: "A"
  *       400:
  *         description: Datos inválidos o parada/línea no encontrada
  *       401:
@@ -74,6 +108,7 @@ router.post(
   '/',
   requireAuth,
   soloRol('pasajero'),
+  requireIdempotencyKey,
   validate(iniciarViajeSchema),
   viajesController.iniciarViaje
 );
@@ -96,8 +131,8 @@ router.post(
  *         name: nroViaje
  *         required: true
  *         schema:
- *           type: string
- *         description: UUID del viaje (numeroSolicitud)
+ *           type: integer
+ *         description: Identificador numérico del viaje (oid autoincremental)
  *     responses:
  *       200:
  *         description: Viaje confirmado — pasajero notificado
@@ -106,8 +141,13 @@ router.post(
  *             schema:
  *               type: object
  *               properties:
- *                 ok:
- *                   type: boolean
+ *                 estado:
+ *                   type: string
+ *                   example: "CONFIRMADO"
+ *                 estimadoArribo:
+ *                   type: integer
+ *                   nullable: true
+ *                   example: 5
  *       400:
  *         description: El viaje no está en estado PENDIENTE
  *       403:
@@ -140,7 +180,7 @@ router.post(
  *         name: nroViaje
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       200:
  *         description: Reasignado o cancelado
@@ -149,10 +189,13 @@ router.post(
  *             schema:
  *               type: object
  *               properties:
- *                 ok:
- *                   type: boolean
+ *                 estado:
+ *                   type: string
+ *                   enum: [PENDIENTE, CANCELADO]
+ *                   example: "CANCELADO"
  *                 reasignado:
  *                   type: boolean
+ *                   example: false
  *       400:
  *         description: El viaje no está en estado PENDIENTE
  *       403:
@@ -184,7 +227,7 @@ router.post(
  *         name: nroViaje
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       200:
  *         description: Ascenso confirmado
@@ -193,8 +236,9 @@ router.post(
  *             schema:
  *               type: object
  *               properties:
- *                 ok:
- *                   type: boolean
+ *                 estado:
+ *                   type: string
+ *                   example: "ABORDO"
  *       400:
  *         description: El viaje no está en estado CONFIRMADO
  *       403:

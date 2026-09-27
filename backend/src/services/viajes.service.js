@@ -7,6 +7,7 @@ const {
   BadRequestError,
   NotFoundError,
   ForbiddenError,
+  ConflictError,
 } = require('../lib/http-errors');
 
 // ---------------------------------------------------------------------------
@@ -73,12 +74,12 @@ const buscarChoferActivo = async (dniChofer, nroLinea, ramal) => {
 };
 
 /**
- * Busca un Viaje por su numeroSolicitud incluyendo todas las relaciones
+ * Busca un Viaje por su oid (Int) incluyendo todas las relaciones
  * necesarias para las operaciones de confirmación / rechazo.
  */
 const buscarViaje = async (nroViaje) => {
   const viaje = await prisma.viaje.findUnique({
-    where: { numeroSolicitud: nroViaje },
+    where: { oid: nroViaje },
     include: {
       parada: true,
       pasajero: {
@@ -123,7 +124,7 @@ const buscarViaje = async (nroViaje) => {
  * 4. Notifica al conductor vía Socket.io.
  * 5. Retorna el número de solicitud.
  */
-const iniciarViaje = async ({ cuentaOid, nroParada, nroLinea, ramal, destino, io }) => {
+const iniciarViaje = async ({ cuentaOid, idempotencyKey, nroParada, nroLinea, ramal, destino, io }) => {
   // Recuperar pasajero a partir de la cuenta autenticada
   const cuenta = await prisma.cuenta.findUnique({
     where: { oid: cuentaOid },
@@ -137,6 +138,14 @@ const iniciarViaje = async ({ cuentaOid, nroParada, nroLinea, ramal, destino, io
   const pasajero = cuenta?.persona?.pasajero;
   if (!pasajero) {
     throw new ForbiddenError('Tu cuenta no tiene un perfil de pasajero');
+  }
+
+  // Deduplicación por idempotency key — si el viaje ya fue creado, devolverlo
+  const viajeExistente = await prisma.viaje.findUnique({
+    where: { idempotencyKey },
+  });
+  if (viajeExistente) {
+    return { nroViaje: viajeExistente.oid };
   }
 
   // Verificar parada en la BD
@@ -158,10 +167,12 @@ const iniciarViaje = async ({ cuentaOid, nroParada, nroLinea, ramal, destino, io
   // Crear viaje en PENDIENTE
   const viaje = await prisma.viaje.create({
     data: {
+      idempotencyKey,
       destino,
       paradaOid:   parada.oid,
       pasajeroOid: pasajero.oid,
       conduceOid,
+      estado:      'PENDIENTE',
     },
   });
 
@@ -169,13 +180,20 @@ const iniciarViaje = async ({ cuentaOid, nroParada, nroLinea, ramal, destino, io
   const conductorUsername = chofer.persona.cuenta?.nombreUsuario;
   if (conductorUsername) {
     io.to(`conductor:${conductorUsername}`).emit('nueva:solicitud', {
-      nroViaje: viaje.numeroSolicitud,
+      nroViaje: viaje.oid,
       parada:   nroParada,
       destino,
     });
   }
 
-  return { nroViaje: viaje.numeroSolicitud };
+  return {
+    nroViaje: viaje.oid,
+    estado:   'PENDIENTE',
+    destino,
+    nroParada,
+    nroLinea,
+    ramal,
+  };
 };
 
 /**
@@ -211,7 +229,7 @@ const confirmarViaje = async ({ cuentaOid, nroViaje, io }) => {
 
   // Actualizar estado
   await prisma.viaje.update({
-    where: { numeroSolicitud: nroViaje },
+    where: { oid: nroViaje },
     data:  { estado: 'CONFIRMADO' },
   });
 
@@ -224,7 +242,7 @@ const confirmarViaje = async ({ cuentaOid, nroViaje, io }) => {
     });
   }
 
-  return { ok: true };
+  return { estado: 'CONFIRMADO', estimadoArribo };
 };
 
 /**
@@ -265,7 +283,7 @@ const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
   if (!siguienteArribo) {
     // No hay más conductores → cancelar viaje
     await prisma.viaje.update({
-      where: { numeroSolicitud: nroViaje },
+      where: { oid: nroViaje },
       data:  { estado: 'CANCELADO', fechaHoraFin: new Date() },
     });
 
@@ -276,7 +294,7 @@ const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
       });
     }
 
-    return { ok: true, reasignado: false };
+    return { estado: 'CANCELADO', reasignado: false };
   }
 
   // Buscar el nuevo conductor activo en la BD
@@ -289,7 +307,7 @@ const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
 
   // Reasignar el viaje al nuevo conductor
   await prisma.viaje.update({
-    where: { numeroSolicitud: nroViaje },
+    where: { oid: nroViaje },
     data:  { conduceOid: nuevoConduceOid },
   });
 
@@ -303,7 +321,7 @@ const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
     });
   }
 
-  return { ok: true, reasignado: true };
+  return { estado: 'PENDIENTE', reasignado: true };
 };
 
 /**
@@ -331,7 +349,7 @@ const confirmarAscenso = async ({ cuentaOid, nroViaje, io }) => {
   }
 
   await prisma.viaje.update({
-    where: { numeroSolicitud: nroViaje },
+    where: { oid: nroViaje },
     data:  { estado: 'ABORDO' },
   });
 
@@ -343,7 +361,7 @@ const confirmarAscenso = async ({ cuentaOid, nroViaje, io }) => {
     });
   }
 
-  return { ok: true };
+  return { estado: 'ABORDO' };
 };
 
 module.exports = {

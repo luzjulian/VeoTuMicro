@@ -31,7 +31,8 @@ const iniciarViaje = async (req, res, next) => {
     const { nroParada, nroLinea, ramal, destino } = req.validated.body;
 
     const resultado = await viajesService.iniciarViaje({
-      cuentaOid: getCuentaOid(req),
+      cuentaOid:      getCuentaOid(req),
+      idempotencyKey: req.idempotencyKey,   // adjuntado por requireIdempotencyKey
       nroParada,
       nroLinea,
       ramal,
@@ -39,7 +40,10 @@ const iniciarViaje = async (req, res, next) => {
       io: getIo(req),
     });
 
-    res.status(201).json(resultado);
+    res
+      .status(201)
+      .set('Location', `/api/viajes/${resultado.nroViaje}`)
+      .json(resultado);
   } catch (err) {
     next(err);
   }
@@ -59,7 +63,7 @@ const confirmarViaje = async (req, res, next) => {
   try {
     const resultado = await viajesService.confirmarViaje({
       cuentaOid: getCuentaOid(req),
-      nroViaje:  req.params.nroViaje,
+      nroViaje:  parseInt(req.params.nroViaje, 10),
       io:        getIo(req),
     });
 
@@ -84,7 +88,7 @@ const rechazarViaje = async (req, res, next) => {
   try {
     const resultado = await viajesService.rechazarViaje({
       cuentaOid: getCuentaOid(req),
-      nroViaje:  req.params.nroViaje,
+      nroViaje:  parseInt(req.params.nroViaje, 10),
       io:        getIo(req),
     });
 
@@ -108,7 +112,7 @@ const confirmarAscenso = async (req, res, next) => {
   try {
     const resultado = await viajesService.confirmarAscenso({
       cuentaOid: getCuentaOid(req),
-      nroViaje:  req.params.nroViaje,
+      nroViaje:  parseInt(req.params.nroViaje, 10),
       io:        getIo(req),
     });
 

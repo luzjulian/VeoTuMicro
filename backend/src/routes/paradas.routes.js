@@ -5,6 +5,8 @@ const ctrl         = require('../controllers/paradas.controller');
 // 🔧 DEV: usando dev-auth mientras el módulo de auth real está en construcción.
 // En producción cambiar a: const { requireAuth } = require('../middlewares/require-auth');
 const { requireAuth } = require('../middlewares/dev-auth');
+const { validate }    = require('../middlewares/validate');
+const { paradaCercanaSchema } = require('../domain/parada');
 
 const router = Router();
 
@@ -43,12 +45,12 @@ const router = Router();
  *             schema:
  *               type: object
  *               properties:
- *                 nroParada: { type: string,  example: "P001"    }
+ *                 nroParada: { type: string,  example: "0001"    }
  *                 latitud:   { type: number,  example: -34.9205  }
  *                 longitud:  { type: number,  example: -57.9562  }
  *       400:
  *         description: Parámetros lat/lon inválidos o ausentes
  */
-router.get('/cercana', requireAuth, ctrl.paradaCercana);
+router.get('/cercana', requireAuth, validate(paradaCercanaSchema, 'query'), ctrl.paradaCercana);
 
 module.exports = router;

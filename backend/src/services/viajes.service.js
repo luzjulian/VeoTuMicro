@@ -1,38 +1,17 @@
 // backend/src/services/viajes.service.js
 
 const prisma = require('../config/prisma');
-const arribosMock = require('../data/proximosArribos.json');
+const { getArribos } = require('../lib/arribosService');
 const {
   AppError,
   BadRequestError,
   NotFoundError,
   ForbiddenError,
-  ConflictError,
 } = require('../lib/http-errors');
 
 // ---------------------------------------------------------------------------
 // Helpers internos
 // ---------------------------------------------------------------------------
-
-/**
- * Devuelve la lista de próximos arribos de una parada filtrada por línea y ramal.
- * El array viene ordenado por estimadoArribo (menor → mayor) en el JSON mock.
- */
-const getArribos = (nroParada, nroLinea, ramal) => {
-  const todos = arribosMock[nroParada];
-  if (!todos || todos.length === 0) {
-    throw new BadRequestError(`No hay información de arrivals para la parada ${nroParada}`);
-  }
-  const filtrados = todos.filter(
-    (a) => a.nroLinea === nroLinea && a.ramal === ramal
-  );
-  if (filtrados.length === 0) {
-    throw new BadRequestError(
-      `La línea ${nroLinea}-${ramal} no tiene próximos arrivals en la parada ${nroParada}`
-    );
-  }
-  return filtrados;
-};
 
 /**
  * Busca el Chofer activo que conduce la línea/ramal indicados,
@@ -143,9 +122,20 @@ const iniciarViaje = async ({ cuentaOid, idempotencyKey, nroParada, nroLinea, ra
   // Deduplicación por idempotency key — si el viaje ya fue creado, devolverlo
   const viajeExistente = await prisma.viaje.findUnique({
     where: { idempotencyKey },
+    include: {
+      parada:  true,
+      conduce: { include: { linea: true } },
+    },
   });
   if (viajeExistente) {
-    return { nroViaje: viajeExistente.oid };
+    return {
+      nroViaje:  viajeExistente.oid,
+      estado:    viajeExistente.estado,
+      destino:   viajeExistente.destino,
+      nroParada: viajeExistente.parada.nroParada,
+      nroLinea:  viajeExistente.conduce.linea.nroLinea,
+      ramal:     viajeExistente.conduce.linea.ramal,
+    };
   }
 
   // Verificar parada en la BD
@@ -157,7 +147,7 @@ const iniciarViaje = async ({ cuentaOid, idempotencyKey, nroParada, nroLinea, ra
   }
 
   // Consultar mock de próximos arribos
-  const arribos = getArribos(nroParada, nroLinea, ramal);
+  const arribos = await getArribos(nroParada, nroLinea, ramal);
   const primerArribo = arribos[0];
 
   // Localizar conductor activo en la BD
@@ -223,7 +213,7 @@ const confirmarViaje = async ({ cuentaOid, nroViaje, io }) => {
   const { nroLinea, ramal } = viaje.conduce.linea;
   const { nroParada } = viaje.parada;
   const dniChofer = viaje.conduce.chofer.persona.dni;
-  const arribos = getArribos(nroParada, nroLinea, ramal);
+  const arribos = await getArribos(nroParada, nroLinea, ramal);
   const arribo = arribos.find((a) => a.dniChofer === dniChofer);
   const estimadoArribo = arribo?.estimadoArribo ?? null;
 
@@ -274,7 +264,7 @@ const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
   const dniChoferActual = viaje.conduce.chofer.persona.dni;
 
   // Buscar siguiente conductor en el mock
-  const arribos = getArribos(nroParada, nroLinea, ramal);
+  const arribos = await getArribos(nroParada, nroLinea, ramal);
   const idxActual = arribos.findIndex((a) => a.dniChofer === dniChoferActual);
   const siguienteArribo = idxActual !== -1 ? arribos[idxActual + 1] : undefined;
 

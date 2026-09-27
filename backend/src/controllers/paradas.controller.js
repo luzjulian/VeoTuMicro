@@ -8,13 +8,8 @@ const { getParadaCercana } = require('../services/paradas.service');
  */
 async function paradaCercana(req, res, next) {
   try {
-    const lat = parseFloat(req.query.lat);
-    const lon = parseFloat(req.query.lon);
-
-    if (isNaN(lat) || isNaN(lon)) {
-      return res.status(400).json({ error: 'Parámetros lat y lon requeridos (numéricos)' });
-    }
-
+    // lat y lon ya vienen parseados y validados por el middleware validate()
+    const { lat, lon } = req.validated.query;
     const parada = await getParadaCercana(lat, lon);
     res.json(parada);
   } catch (err) {

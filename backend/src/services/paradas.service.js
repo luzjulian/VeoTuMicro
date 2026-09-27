@@ -1,7 +1,7 @@
 // backend/src/services/paradas.service.js
 
 const prisma = require('../config/prisma');
-const { BadRequestError } = require('../lib/http-errors');
+const { AppError, BadRequestError } = require('../lib/http-errors');
 
 /**
  * Distancia euclidiana máxima aceptable (en grados² lat/lon).
@@ -30,7 +30,7 @@ async function getParadaCercana(lat, lon) {
   });
 
   if (!paradas.length) {
-    throw new Error('No hay paradas registradas en el sistema');
+    throw new AppError(503, 'No hay paradas registradas en el sistema');
   }
 
   let nearest = null;

@@ -26,6 +26,11 @@ const iniciarViajeSchema = z.object({
 // POST /api/viajes/:nroViaje/confirmar → Conductor confirma viaje
 // POST /api/viajes/:nroViaje/rechazar  → Conductor rechaza viaje
 // POST /api/viajes/:nroViaje/abordo    → Pasajero confirma ascenso
-// (sin body — el nroViaje viene en params)
+const nroViajeParamSchema = z.object({
+  nroViaje: z
+    .string({ required_error: 'El número de viaje es requerido' })
+    .regex(/^\d+$/, 'nroViaje debe ser un entero positivo')
+    .transform((v) => parseInt(v, 10)),
+});
 
-module.exports = { iniciarViajeSchema };
+module.exports = { iniciarViajeSchema, nroViajeParamSchema };

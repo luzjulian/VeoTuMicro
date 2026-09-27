@@ -9,6 +9,9 @@ const viajesService = require('../services/viajes.service');
 /** Extrae el oid de la cuenta del JWT (el campo `sub` es string) */
 const getCuentaOid = (req) => parseInt(req.usuario.sub, 10);
 
+/** Extrae el nroViaje ya validado y parseado por el middleware validate() */
+const getNroViaje = (req) => req.validated.params.nroViaje;
+
 /** Obtiene la instancia de Socket.io adjunta en server.js */
 const getIo = (req) => req.app.get('io');
 
@@ -53,17 +56,17 @@ const iniciarViaje = async (req, res, next) => {
  * POST /api/viajes/:nroViaje/confirmar
  * Rol requerido: chofer
  *
- * Params: nroViaje (el numeroSolicitud UUID)
+ * Params: nroViaje (Int, oid autoincremental del viaje)
  *
  * Respuesta 200:
- *   { ok: true }
+ *   { estado: 'CONFIRMADO', estimadoArribo: number | null }
  *   + Socket event 'viaje:confirmado' al pasajero
  */
 const confirmarViaje = async (req, res, next) => {
   try {
     const resultado = await viajesService.confirmarViaje({
       cuentaOid: getCuentaOid(req),
-      nroViaje:  parseInt(req.params.nroViaje, 10),
+      nroViaje:  getNroViaje(req),
       io:        getIo(req),
     });
 
@@ -77,18 +80,18 @@ const confirmarViaje = async (req, res, next) => {
  * POST /api/viajes/:nroViaje/rechazar
  * Rol requerido: chofer
  *
- * Params: nroViaje (el numeroSolicitud UUID)
+ * Params: nroViaje (Int, oid autoincremental del viaje)
  *
  * Respuesta 200:
- *   { ok: true, reasignado: boolean }
- *   + Socket event 'nueva:solicitud' al próximo conductor
+ *   { estado: 'PENDIENTE' | 'CANCELADO', reasignado: boolean }
+ *   + Socket event 'nueva:solicitud' al próximo conductor (si reasignado)
  *   O Socket event 'viaje:cancelado' al pasajero si no hay más conductores
  */
 const rechazarViaje = async (req, res, next) => {
   try {
     const resultado = await viajesService.rechazarViaje({
       cuentaOid: getCuentaOid(req),
-      nroViaje:  parseInt(req.params.nroViaje, 10),
+      nroViaje:  getNroViaje(req),
       io:        getIo(req),
     });
 
@@ -102,17 +105,17 @@ const rechazarViaje = async (req, res, next) => {
  * POST /api/viajes/:nroViaje/abordo
  * Rol requerido: pasajero
  *
- * Params: nroViaje (el numeroSolicitud UUID)
+ * Params: nroViaje (Int, oid autoincremental del viaje)
  *
  * Respuesta 200:
- *   { ok: true }
+ *   { estado: 'ABORDO' }
  *   + Socket event 'pasajero:abordo' al conductor
  */
 const confirmarAscenso = async (req, res, next) => {
   try {
     const resultado = await viajesService.confirmarAscenso({
       cuentaOid: getCuentaOid(req),
-      nroViaje:  parseInt(req.params.nroViaje, 10),
+      nroViaje:  getNroViaje(req),
       io:        getIo(req),
     });
 

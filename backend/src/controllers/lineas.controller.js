@@ -1,6 +1,6 @@
 // backend/src/controllers/lineas.controller.js
 
-const { getLineasActivas, validarDisponibilidad } = require('../services/lineas.service');
+const { getLineasActivas, consultarDisponibilidadLinea } = require('../services/lineas.service');
 
 /**
  * GET /api/lineas/activas
@@ -17,21 +17,15 @@ async function listarLineasActivas(req, res, next) {
 
 /**
  * GET /api/lineas/disponible?nroLinea=307&ramal=A&nroParada=P001
- * Valida si la línea tiene próximos arrivals en la parada detectada.
- * 200 → disponible   |   400 → no disponible (con mensaje descriptivo)
+ * Consulta si la línea tiene próximos arrivals en la parada detectada por GPS.
+ * Siempre responde 200 { disponible: boolean } — no usa 400 para "sin resultados".
+ * La validación de parámetros la realiza el middleware validate() en la ruta.
  */
-function chequearDisponibilidad(req, res, next) {
+async function chequearDisponibilidad(req, res, next) {
   try {
-    const { nroLinea, ramal, nroParada } = req.query;
-
-    if (!nroLinea || !ramal || !nroParada) {
-      return res.status(400).json({
-        error: 'Se requieren los parámetros nroLinea, ramal y nroParada',
-      });
-    }
-
-    validarDisponibilidad(nroLinea, ramal, nroParada);
-    res.json({ disponible: true });
+    const { nroLinea, ramal, nroParada } = req.validated.query;
+    const disponible = await consultarDisponibilidadLinea(nroLinea, ramal, nroParada);
+    res.json({ disponible });
   } catch (err) {
     next(err);
   }

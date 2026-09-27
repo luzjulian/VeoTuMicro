@@ -5,6 +5,8 @@ const ctrl         = require('../controllers/lineas.controller');
 // 🔧 DEV: usando dev-auth mientras el módulo de auth real está en construcción.
 // En producción cambiar a: const { requireAuth } = require('../middlewares/require-auth');
 const { requireAuth } = require('../middlewares/dev-auth');
+const { validate }    = require('../middlewares/validate');
+const { disponibilidadSchema } = require('../domain/linea');
 
 const router = Router();
 
@@ -63,7 +65,7 @@ router.get('/activas', requireAuth, ctrl.listarLineasActivas);
  *         schema: { type: string, example: "P001" }
  *     responses:
  *       200:
- *         description: La línea está disponible en esa parada
+ *         description: Resultado de disponibilidad (siempre 200; disponible puede ser false)
  *         content:
  *           application/json:
  *             schema:
@@ -71,8 +73,8 @@ router.get('/activas', requireAuth, ctrl.listarLineasActivas);
  *               properties:
  *                 disponible: { type: boolean, example: true }
  *       400:
- *         description: La línea no tiene arrivals en esa parada
+ *         description: Parámetros ausentes o inválidos (nroLinea, ramal o nroParada)
  */
-router.get('/disponible', requireAuth, ctrl.chequearDisponibilidad);
+router.get('/disponible', requireAuth, validate(disponibilidadSchema, 'query'), ctrl.chequearDisponibilidad);
 
 module.exports = router;

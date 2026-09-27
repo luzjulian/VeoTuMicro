@@ -6,8 +6,8 @@ const viajesController         = require('../controllers/viajes.controller');
 // Cuando auth esté listo, cambiar esta línea por:
 // const { requireAuth, soloRol } = require('../middlewares/require-auth');
 const { requireAuth, soloRol } = require('../middlewares/dev-auth');
-const { validate }             = require('../middlewares/validate');
-const { iniciarViajeSchema }   = require('../domain/viaje');
+const { validate }                          = require('../middlewares/validate');
+const { iniciarViajeSchema, nroViajeParamSchema } = require('../domain/viaje');
 const { requireIdempotencyKey } = require('../middlewares/idempotency');
 
 const router = Router();
@@ -159,6 +159,7 @@ router.post(
   '/:nroViaje/confirmar',
   requireAuth,
   soloRol('chofer'),
+  validate(nroViajeParamSchema, 'params'),
   viajesController.confirmarViaje
 );
 
@@ -207,6 +208,7 @@ router.post(
   '/:nroViaje/rechazar',
   requireAuth,
   soloRol('chofer'),
+  validate(nroViajeParamSchema, 'params'),
   viajesController.rechazarViaje
 );
 
@@ -250,6 +252,7 @@ router.post(
   '/:nroViaje/abordo',
   requireAuth,
   soloRol('pasajero'),
+  validate(nroViajeParamSchema, 'params'),
   viajesController.confirmarAscenso
 );
 

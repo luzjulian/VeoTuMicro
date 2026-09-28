@@ -11,4 +11,19 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    proxy: {
+      // Redirige /api/* al backend Express
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      // Redirige el handshake y los WebSockets de Socket.io al backend
+      '/socket.io': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        ws: true,   // ← activa el proxy WebSocket
+      },
+    },
+  },
 })

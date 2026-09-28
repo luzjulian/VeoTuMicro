@@ -6,7 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "seed": "node prisma/seed.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +20,9 @@
     "@prisma/client": "^6.19.3",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
+    "cookie": "^1.0.2",
     "cookie-parser": "^1.4.7",
+    "socket.io": "^4.8.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

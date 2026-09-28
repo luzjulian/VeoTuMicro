@@ -1,11 +1,13 @@
 // src/pages/pasajero/EsperaPage.jsx
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
+// 🔁 Swap: mock → servicio real (misma interfaz)
 import {
-  suscribirseAViajeMock,
-  reiniciarCicloArriboMock,
-  notificarCancelacionAlConductorMock,
-} from "@/services/mock/mockRealtimeService";
+  suscribirseAViaje            as suscribirseAViajeMock,
+  reiniciarCicloArribo         as reiniciarCicloArriboMock,
+  notificarCancelacionAlConductor as notificarCancelacionAlConductorMock,
+  confirmarAscenso,
+} from "@/services/pasajeroService";
 import { useEsperaVoiceFlow } from "@/hooks/useEsperaVoiceFlow";
 import { VoiceStatusCircle } from "@/components/pasajero/VoiceStatusCircle";
 
@@ -31,7 +33,12 @@ export default function EsperaPage() {
 
   const preguntarAbordaje = () => {
     preguntarSiNo("¿Has podido abordar? Decí sí o no", {
-      onSi: () => {
+      onSi: async () => {
+        try {
+          await confirmarAscenso(viaje.numeroSolicitud);
+        } catch (err) {
+          console.warn('[EsperaPage] confirmarAscenso (voz) falló (continuando):', err.message);
+        }
         actualizarViaje({ estadoViaje: "a_bordo" });
         navigate("/pasajero/viaje");
       },
@@ -92,8 +99,14 @@ export default function EsperaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viaje.numeroSolicitud]);
 
-  const handleYaSubi = () => {
+  const handleYaSubi = async () => {
     unsubscribeRef.current?.();
+    // Notificar al backend/conductor que el pasajero confirmó el ascenso
+    try {
+      await confirmarAscenso(viaje.numeroSolicitud);
+    } catch (err) {
+      console.warn('[EsperaPage] confirmarAscenso falló (continuando igual):', err.message);
+    }
     actualizarViaje({ estadoViaje: "a_bordo" });
     navigate("/pasajero/viaje");
   };

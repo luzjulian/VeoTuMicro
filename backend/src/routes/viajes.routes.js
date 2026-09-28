@@ -256,4 +256,98 @@ router.post(
   viajesController.confirmarAscenso
 );
 
+/**
+ * @swagger
+ * /api/viajes/{nroViaje}/proximidad:
+ *   post:
+ *     summary: Avisa al pasajero que se acerca a su parada de descenso (conductor)
+ *     description: >
+ *       Simula la proximidad a la parada de bajada (en producción la dispararía el GPS).
+ *       Solo funciona con el viaje en estado ABORDO y notifica al pasajero vía Socket.io
+ *       (evento viaje:proximidad). Es idempotente: si ya se avisó, un reintento devuelve
+ *       200 con notificado=false y no vuelve a emitir el evento.
+ *     tags: [Viajes]
+ *     security:
+ *       - cookieAuth: []
+ *       - devAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: nroViaje
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Aviso enviado (o ya enviado previamente)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 notificado:
+ *                   type: boolean
+ *                   example: true
+ *                 mensaje:
+ *                   type: string
+ *                   example: "Notificación de proximidad enviada"
+ *       400:
+ *         description: El viaje no está en estado ABORDO
+ *       403:
+ *         description: No es tu viaje
+ *       404:
+ *         description: Viaje no encontrado
+ */
+router.post(
+  '/:nroViaje/proximidad',
+  requireAuth,
+  soloRol('chofer'),
+  validate(nroViajeParamSchema, 'params'),
+  viajesController.notificarProximidad
+);
+
+/**
+ * @swagger
+ * /api/viajes/{nroViaje}/descenso:
+ *   post:
+ *     summary: Confirma el descenso del pasajero (conductor)
+ *     description: >
+ *       El conductor confirma que el pasajero bajó. El viaje pasa a FINALIZADO y se
+ *       notifica al pasajero vía Socket.io (evento descenso:confirmado).
+ *       Es idempotente: si el viaje ya estaba FINALIZADO devuelve 200 sin volver a notificar.
+ *     tags: [Viajes]
+ *     security:
+ *       - cookieAuth: []
+ *       - devAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: nroViaje
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Descenso confirmado (o ya confirmado previamente)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 estado:
+ *                   type: string
+ *                   example: "FINALIZADO"
+ *       400:
+ *         description: El viaje no está en estado ABORDO
+ *       403:
+ *         description: No es tu viaje
+ *       404:
+ *         description: Viaje no encontrado
+ */
+router.post(
+  '/:nroViaje/descenso',
+  requireAuth,
+  soloRol('chofer'),
+  validate(nroViajeParamSchema, 'params'),
+  viajesController.confirmarDescenso
+);
+
 module.exports = router;

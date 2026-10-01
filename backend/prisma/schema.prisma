@@ -15,7 +15,7 @@ datasource db {
 
 model Cuenta {
   oid           Int            @id @default(autoincrement())
-  dni           String
+  dni           String?        // opcional: el formulario de registro actual no lo pide
   nombreUsuario String         @unique
   contrasenia   String
 
@@ -38,9 +38,10 @@ model RefreshToken {
 
 model Persona {
   oid             Int      @id @default(autoincrement())
-  dni             String   @unique
+  dni             String?  @unique
   nombreApellido  String
-  fechaNacimiento DateTime
+  fechaNacimiento DateTime?
+  email           String?  @unique
 
   // Relaciones
   cuenta          Cuenta?
@@ -74,7 +75,7 @@ model Pasajero {
   personaOid              Int      @unique
   persona                 Persona  @relation(fields: [personaOid], references: [oid])
   
-  adminOid                Int?     // Opcional: nulo si está pendiente de validación
+  adminOid                Int?     // Administrativo que aprobó la solicitud de registro
   administrativo          Administrativo? @relation(fields: [adminOid], references: [oid])
   
   viajes                  Viaje[]
@@ -98,6 +99,40 @@ model Administrativo {
   persona             Persona    @relation(fields: [personaOid], references: [oid])
   
   pasajerosValidados  Pasajero[]
+  solicitudesResueltas SolicitudRegistro[]
+}
+
+// ---------------------------------------------------------
+// SOLICITUDES DE REGISTRO DE PASAJEROS
+// ---------------------------------------------------------
+// El registro NO crea el usuario: guarda una solicitud pendiente.
+// Recién cuando un administrativo la acepta se crean Persona, Cuenta y Pasajero.
+
+enum EstadoSolicitud {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
+}
+
+model SolicitudRegistro {
+  oid               Int             @id @default(autoincrement())
+  nombreApellido    String
+  dni               String?
+  fechaNacimiento   DateTime?
+  email             String          // también será el nombreUsuario de la Cuenta
+  contraseniaHash   String          // hash bcrypt, nunca la contraseña en claro
+  certificadoKey    String          // nombre del archivo PDF en el almacenamiento
+  certificadoNombre String          // nombre original, solo para mostrar
+  estado            EstadoSolicitud @default(PENDIENTE)
+  createdAt         DateTime        @default(now())
+  resueltaAt        DateTime?
+
+  adminOid          Int?
+  administrativo    Administrativo? @relation(fields: [adminOid], references: [oid])
+
+  @@index([estado, createdAt])
+  @@index([email])
+  @@index([dni])
 }
 
 // ---------------------------------------------------------

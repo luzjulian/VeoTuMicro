@@ -7,3 +7,6 @@ node_modules
 #config docker
 
 docker-compose.yml
+
+# Certificados subidos por los usuarios (datos sensibles, nunca al repo)
+uploads/

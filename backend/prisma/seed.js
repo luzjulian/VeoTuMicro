@@ -2,6 +2,10 @@
 // Ejecutar con: npx prisma db seed
 // (o manualmente: node prisma/seed.js)
 
+require('dotenv').config();
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
@@ -11,6 +15,41 @@ const prisma = new PrismaClient();
 // Helpers
 // ---------------------------------------------------------------------------
 const hashPwd = (pwd) => bcrypt.hashSync(pwd, 10);
+
+// Mismo directorio que usa el backend para los certificados (UPLOADS_DIR).
+const UPLOADS_DIR = path.resolve(process.cwd(), process.env.UPLOADS_DIR || './uploads/certificados');
+
+// Arma un PDF mínimo pero válido (una página con un texto) para tener certificados de ejemplo.
+const construirPdf = (texto) => {
+  const objetos = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    null, // contenido (se arma abajo)
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ];
+  const contenido = `BT /F1 20 Tf 60 780 Td (${texto.replace(/[()\\]/g, '')}) Tj ET`;
+  objetos[3] = `<< /Length ${contenido.length} >>\nstream\n${contenido}\nendstream`;
+
+  let pdf = '%PDF-1.4\n';
+  const offsets = [];
+  objetos.forEach((o, i) => {
+    offsets.push(pdf.length);
+    pdf += `${i + 1} 0 obj\n${o}\nendobj\n`;
+  });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objetos.length + 1}\n0000000000 65535 f \n`;
+  offsets.forEach((off) => { pdf += `${String(off).padStart(10, '0')} 00000 n \n`; });
+  pdf += `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(pdf, 'latin1');
+};
+
+const guardarPdfDeEjemplo = (texto) => {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  const clave = `${crypto.randomUUID()}.pdf`;
+  fs.writeFileSync(path.join(UPLOADS_DIR, clave), construirPdf(texto));
+  return clave;
+};
 
 // ---------------------------------------------------------------------------
 // Datos de referencia
@@ -55,6 +94,7 @@ const CHOFERES_DATA = [
     fechaNacimiento: new Date('1985-03-15'),
     nroLicenciaConducir: 'LC-001-ARG',
     nombreUsuario: 'chofer.carlos',
+    email: 'chofer.carlos@veotumicro.test',
     password: 'chofer1234',
     lineaIdx: 0, // 307-A
   },
@@ -64,6 +104,7 @@ const CHOFERES_DATA = [
     fechaNacimiento: new Date('1979-07-22'),
     nroLicenciaConducir: 'LC-002-ARG',
     nombreUsuario: 'chofer.mario',
+    email: 'chofer.mario@veotumicro.test',
     password: 'chofer1234',
     lineaIdx: 0, // 307-A
   },
@@ -73,6 +114,7 @@ const CHOFERES_DATA = [
     fechaNacimiento: new Date('1990-11-30'),
     nroLicenciaConducir: 'LC-003-ARG',
     nombreUsuario: 'chofer.lucas',
+    email: 'chofer.lucas@veotumicro.test',
     password: 'chofer1234',
     lineaIdx: 1, // 214-D
   },
@@ -82,6 +124,7 @@ const CHOFERES_DATA = [
     fechaNacimiento: new Date('1982-06-10'),
     nroLicenciaConducir: 'LC-004-ARG',
     nombreUsuario: 'chofer.pedro',
+    email: 'chofer.pedro@veotumicro.test',
     password: 'chofer1234',
     lineaIdx: 1, // 214-D
   },
@@ -91,6 +134,7 @@ const CHOFERES_DATA = [
     fechaNacimiento: new Date('1975-01-05'),
     nroLicenciaConducir: 'LC-005-ARG',
     nombreUsuario: 'chofer.jorge',
+    email: 'chofer.jorge@veotumicro.test',
     password: 'chofer1234',
     lineaIdx: 2, // 202-B
   },
@@ -100,6 +144,7 @@ const CHOFERES_DATA = [
     fechaNacimiento: new Date('1988-09-14'),
     nroLicenciaConducir: 'LC-006-ARG',
     nombreUsuario: 'chofer.roberto',
+    email: 'chofer.roberto@veotumicro.test',
     password: 'chofer1234',
     lineaIdx: 2, // 202-B
   },
@@ -111,6 +156,7 @@ const ADMIN_DATA = {
   fechaNacimiento: new Date('1980-04-20'),
   legajo: 'ADM-001',
   nombreUsuario: 'admin.jefe',
+  email: 'admin@veotumicro.test',
   password: 'admin1234',
 };
 
@@ -121,6 +167,7 @@ const PASAJEROS_DATA = [
     fechaNacimiento: new Date('1995-08-12'),
     certificadoDiscapacidad: 'CERT-VIS-001',
     nombreUsuario: 'pasajero.ana',
+    email: 'ana@veotumicro.test',
     password: 'pasajero1234',
   },
   {
@@ -129,6 +176,7 @@ const PASAJEROS_DATA = [
     fechaNacimiento: new Date('2000-02-28'),
     certificadoDiscapacidad: 'CERT-VIS-002',
     nombreUsuario: 'pasajero.maria',
+    email: 'maria@veotumicro.test',
     password: 'pasajero1234',
   },
 ];
@@ -142,6 +190,7 @@ async function main() {
   // 1. Limpiar en orden inverso de dependencias
   console.log('🧹 Limpiando BD...');
   await prisma.viaje.deleteMany();
+  await prisma.solicitudRegistro.deleteMany();
   await prisma.conduce.deleteMany();
   await prisma.paradaAscenso.deleteMany();
   await prisma.linea.deleteMany();
@@ -173,6 +222,7 @@ async function main() {
       dni:             ADMIN_DATA.dni,
       nombreApellido:  ADMIN_DATA.nombreApellido,
       fechaNacimiento: ADMIN_DATA.fechaNacimiento,
+      email:           ADMIN_DATA.email,
     },
   });
   const adminRol = await prisma.administrativo.create({
@@ -196,6 +246,7 @@ async function main() {
         dni:             p.dni,
         nombreApellido:  p.nombreApellido,
         fechaNacimiento: p.fechaNacimiento,
+        email:           p.email,
       },
     });
     await prisma.pasajero.create({
@@ -226,6 +277,7 @@ async function main() {
         dni:             c.dni,
         nombreApellido:  c.nombreApellido,
         fechaNacimiento: c.fechaNacimiento,
+        email:           c.email,
       },
     });
     const chofer = await prisma.chofer.create({
@@ -258,12 +310,39 @@ async function main() {
     );
   }
 
+  // 7. Solicitudes de registro de ejemplo (para probar el panel administrativo)
+  console.log('\n📄 Creando solicitudes de registro de ejemplo...');
+  const HACE = (min) => new Date(Date.now() - min * 60 * 1000);
+  const SOLICITUDES_DATA = [
+    { nombreApellido: 'Marina García',  dni: '34901567', email: 'marina@veotumicro.test', estado: 'PENDIENTE', createdAt: HACE(120) },
+    { nombreApellido: 'Diego Romero',   dni: null,       email: 'diego@veotumicro.test',  estado: 'PENDIENTE', createdAt: HACE(45) },
+    { nombreApellido: 'Andrés Pérez',   dni: '34612445', email: 'andres@veotumicro.test', estado: 'RECHAZADA', createdAt: HACE(60 * 48) },
+  ];
+  for (const sol of SOLICITUDES_DATA) {
+    await prisma.solicitudRegistro.create({
+      data: {
+        nombreApellido:    sol.nombreApellido,
+        dni:               sol.dni,
+        email:             sol.email,
+        contraseniaHash:   hashPwd('pasajero1234'),
+        certificadoKey:    guardarPdfDeEjemplo(`Certificado de ejemplo - ${sol.nombreApellido}`),
+        certificadoNombre: 'certificado.pdf',
+        estado:            sol.estado,
+        createdAt:         sol.createdAt,
+        ...(sol.estado === 'RECHAZADA' ? { resueltaAt: HACE(60 * 47), adminOid: adminRol.oid } : {}),
+      },
+    });
+    console.log(`   ${sol.nombreApellido} → ${sol.estado} (${sol.email})`);
+  }
+
   console.log('\n✅ Seed completado con éxito!');
   console.log('\n📋 Resumen de credenciales:');
-  console.log('   Admin:    admin.jefe / admin1234');
-  console.log('   Pasajeros: pasajero.ana, pasajero.maria / pasajero1234');
+  console.log('   Admin:    admin@veotumicro.test (o admin.jefe) / admin1234');
+  console.log('   Pasajeros: ana@veotumicro.test, maria@veotumicro.test (o pasajero.ana, pasajero.maria) / pasajero1234');
   console.log('   Choferes:  chofer.carlos, chofer.mario, chofer.lucas,');
   console.log('              chofer.pedro, chofer.jorge, chofer.roberto / chofer1234');
+  console.log('   Los choferes también entran con <usuario>@veotumicro.test');
+  console.log('   Solicitudes de ejemplo: 2 pendientes (Marina, Diego) y 1 rechazada (Andrés).');
 }
 
 main()

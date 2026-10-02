@@ -31,25 +31,36 @@ const options = {
       schemas: {
 
         // ─── Auth ──────────────────────────────────────────────────────────
+        // multipart/form-data: los nombres de campo son los del formulario del front
         RegisterInput: {
           type: 'object',
-          required: ['nombreUsuario', 'contrasenia', 'dni', 'nombreApellido', 'fechaNacimiento', 'certificadoDiscapacidad'],
+          required: ['nombre', 'email', 'password', 'certificado'],
           properties: {
-            nombreUsuario:           { type: 'string', example: 'luzjulian' },
-            contrasenia:             { type: 'string', example: 'miPassword123' },
-            dni:                     { type: 'string', example: '12345678' },
-            nombreApellido:          { type: 'string', example: 'Julian Luz' },
-            fechaNacimiento:         { type: 'string', format: 'date-time', example: '2000-05-15T00:00:00.000Z' },
-            certificadoDiscapacidad: { type: 'string', example: 'CERT-001' },
+            nombre:          { type: 'string', example: 'Pepe Argento', description: 'Nombre completo' },
+            email:           { type: 'string', format: 'email', example: 'pepeargento@correo.com', description: 'Será el nombre de usuario' },
+            password:        { type: 'string', format: 'password', minLength: 8, maxLength: 72, example: 'miPassword123' },
+            confirmPassword: { type: 'string', format: 'password', description: 'Opcional; si se envía debe coincidir con password' },
+            dni:             { type: 'string', example: '12345678', description: 'Opcional (7 u 8 dígitos)' },
+            fechaNacimiento: { type: 'string', example: '2000-05-15', description: 'Opcional (AAAA-MM-DD)' },
+            certificado:     { type: 'string', format: 'binary', description: 'Certificado de discapacidad en PDF (máx. 5 MB)' },
+          },
+        },
+
+        RegisterResponse: {
+          type: 'object',
+          properties: {
+            message: { type: 'string', example: 'Solicitud enviada. Te avisaremos por mail cuando validemos tu certificado' },
+            estado:  { type: 'string', example: 'pendiente' },
           },
         },
 
         LoginInput: {
           type: 'object',
-          required: ['nombreUsuario', 'contrasenia'],
+          description: 'Se entra con email y contraseña (también se acepta nombreUsuario y contrasenia).',
+          required: ['email', 'password'],
           properties: {
-            nombreUsuario: { type: 'string', example: 'luzjulian' },
-            contrasenia:   { type: 'string', example: 'miPassword123' },
+            email:    { type: 'string', example: 'pepeargento@correo.com' },
+            password: { type: 'string', example: 'miPassword123' },
           },
         },
 
@@ -62,6 +73,43 @@ const options = {
               enum: ['pasajero', 'chofer', 'administrativo'],
               example: 'pasajero',
             },
+          },
+        },
+
+        // ─── Admin ─────────────────────────────────────────────────────────
+        Solicitud: {
+          type: 'object',
+          properties: {
+            id:                { type: 'integer', example: 12 },
+            nombre:            { type: 'string', example: 'Pepe' },
+            apellido:          { type: 'string', example: 'Argento', description: 'Última palabra del nombre completo (solo para mostrar)' },
+            dni:               { type: 'string', nullable: true, example: '12345678' },
+            fechaHoraRegistro: { type: 'string', format: 'date-time' },
+            estado:            { type: 'string', enum: ['pendiente', 'aceptado', 'rechazado'] },
+            certificadoUrl:    { type: 'string', example: '/api/admin/solicitudes/12/certificado' },
+          },
+        },
+
+        SolicitudResuelta: {
+          allOf: [
+            { $ref: '#/components/schemas/Solicitud' },
+            {
+              type: 'object',
+              properties: {
+                mailEnviado: { type: 'boolean', description: 'false si el mail falló (la decisión se guardó igual)' },
+              },
+            },
+          ],
+        },
+
+        Kpis: {
+          type: 'object',
+          properties: {
+            solicitudesHoy:    { type: 'integer', example: 4 },
+            deltaVsAyer:       { type: 'integer', example: 1, description: 'Solicitudes de hoy menos las de ayer' },
+            pasajerosActivos:  { type: 'integer', example: 128, description: 'Pasajeros con certificado aprobado' },
+            certPendientes:    { type: 'integer', example: 3 },
+            conductoresEnRuta: { type: 'integer', example: 12 },
           },
         },
 

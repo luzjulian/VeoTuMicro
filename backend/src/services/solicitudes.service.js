@@ -49,7 +49,7 @@ const obtenerAdministrativo = async (cuentaOid) => {
  * @param {import('socket.io').Server} [p.io]
  */
 const crearSolicitud = async ({ datos, archivo, io }) => {
-  const { nombre, email, password, dni, fechaNacimiento } = datos;
+  const { nombre, apellido, email, password, dni, fechaNacimiento } = datos;
 
   const coincidencias = [{ email }, ...(dni ? [{ dni }] : [])];
 
@@ -67,7 +67,9 @@ const crearSolicitud = async ({ datos, archivo, io }) => {
 
   const solicitud = await prisma.solicitudRegistro.create({
     data: {
-      nombreApellido:    nombre,
+      nombreApellido:    apellido ? `${nombre} ${apellido}` : nombre,
+      nombre:            apellido ? nombre : null,
+      apellido:          apellido ?? null,
       dni:               dni ?? null,
       fechaNacimiento:   fechaNacimiento ? new Date(fechaNacimiento) : null,
       email,

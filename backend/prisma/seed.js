@@ -314,14 +314,16 @@ async function main() {
   console.log('\n📄 Creando solicitudes de registro de ejemplo...');
   const HACE = (min) => new Date(Date.now() - min * 60 * 1000);
   const SOLICITUDES_DATA = [
-    { nombreApellido: 'Marina García',  dni: '34901567', email: 'marina@veotumicro.test', estado: 'PENDIENTE', createdAt: HACE(120) },
-    { nombreApellido: 'Diego Romero',   dni: null,       email: 'diego@veotumicro.test',  estado: 'PENDIENTE', createdAt: HACE(45) },
-    { nombreApellido: 'Andrés Pérez',   dni: '34612445', email: 'andres@veotumicro.test', estado: 'RECHAZADA', createdAt: HACE(60 * 48) },
+    { nombre: 'Marina', apellido: 'García', nombreApellido: 'Marina García',  dni: '34901567', email: 'marina@veotumicro.test', estado: 'PENDIENTE', createdAt: HACE(120) },
+    { nombre: 'Diego', apellido: 'Romero', nombreApellido: 'Diego Romero',   dni: null,       email: 'diego@veotumicro.test',  estado: 'PENDIENTE', createdAt: HACE(45) },
+    { nombre: 'Andrés', apellido: 'Pérez', nombreApellido: 'Andrés Pérez',   dni: '34612445', email: 'andres@veotumicro.test', estado: 'RECHAZADA', createdAt: HACE(60 * 48) },
   ];
   for (const sol of SOLICITUDES_DATA) {
     await prisma.solicitudRegistro.create({
       data: {
         nombreApellido:    sol.nombreApellido,
+        nombre:            sol.nombre,
+        apellido:          sol.apellido,
         dni:               sol.dni,
         email:             sol.email,
         contraseniaHash:   hashPwd('pasajero1234'),

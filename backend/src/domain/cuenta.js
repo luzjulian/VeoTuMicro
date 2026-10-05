@@ -37,6 +37,8 @@ const vacioAUndefined = (v) => (typeof v === 'string' && v.trim() === '' ? undef
 const registerSchema = z
   .object({
     nombre:          z.string('El nombre es obligatorio').trim().min(1, 'El nombre es obligatorio').max(100),
+    // Opcional por compatibilidad: si no llega, `nombre` se toma como nombre completo.
+    apellido:        z.preprocess(vacioAUndefined, z.string().trim().max(100).optional()),
     email:           z.string('El email es obligatorio').trim().toLowerCase().pipe(z.email('Email inválido').max(254)),
     password:        z.string('La contraseña es obligatoria').min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
     confirmPassword: z.string().optional(),

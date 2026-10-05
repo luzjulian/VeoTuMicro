@@ -45,6 +45,14 @@ const PARADAS = [
   { nroParada: '0003', latitud: -34.903712, longitud: -57.924803 }, // ubicación 2 — exacta
   { nroParada: '0004', latitud: -34.906412, longitud: -57.924803 }, // ubicación 2 — ~300 m sur
   { nroParada: '0005', latitud: -34.903712, longitud: -57.928003 }, // ubicación 2 — ~300 m oeste
+
+  // Grupo 3 — direcciones reales del equipo, para pruebas de GPS con
+  // override de coordenadas en DevTools (Sensors). Las 3 líneas están
+  // disponibles en las 4 (happy path) — ver proximosArribos.json.
+  { nroParada: '0006', latitud: -34.9281465, longitud: -57.951525   }, // C. 59 1032, La Plata
+  { nroParada: '0007', latitud: -34.9226011, longitud: -57.9533442  }, // C. 54 904, La Plata
+  { nroParada: '0008', latitud: -34.9209259, longitud: -57.9468235  }, // Diag. 73 1433, La Plata
+  { nroParada: '0009', latitud: -34.9052731, longitud: -57.9252338  }, // Av. del Petróleo Argentino y 124, Berisso (facultad)
 ];
 
 // Choferes — los DNI deben coincidir con proximosArribos.json y ser únicos en Persona
@@ -139,18 +147,19 @@ const PASAJEROS_DATA = [
 async function main() {
   console.log('🌱 Iniciando seed...\n');
 
-  // 1. Limpiar en orden inverso de dependencias
-  console.log('🧹 Limpiando BD...');
-  await prisma.viaje.deleteMany();
-  await prisma.conduce.deleteMany();
-  await prisma.paradaAscenso.deleteMany();
-  await prisma.linea.deleteMany();
-  await prisma.pasajero.deleteMany();
-  await prisma.chofer.deleteMany();
-  await prisma.administrativo.deleteMany();
-  await prisma.refreshToken.deleteMany();
-  await prisma.cuenta.deleteMany();
-  await prisma.persona.deleteMany();
+  // 1. Limpiar TODO y resetear los contadores de oid a 1.
+  // TRUNCATE ... CASCADE arrastra las tablas dependientes (Telefono,
+  // Pasajero, Chofer, Administrativo, RefreshToken, Conduce, Viaje),
+  // y RESTART IDENTITY reinicia también sus secuencias autoincrementales
+  // — no solo las de Persona/Cuenta/Linea/ParadaAscenso.
+  // Esto es necesario porque `deleteMany()` borra filas pero NO resetea
+  // los contadores: si corrés el seed más de una vez, los oid seguían
+  // subiendo y dejaban de coincidir con los fijos en config/devAuth.js
+  // del frontend (sub: '2' para pasajero.ana, sub: '4' para chofer.carlos).
+  console.log('🧹 Limpiando BD y reseteando contadores de oid...');
+  await prisma.$executeRawUnsafe(
+    `TRUNCATE TABLE "Persona", "Cuenta", "Linea", "ParadaAscenso" RESTART IDENTITY CASCADE;`
+  );
 
   // 2. Líneas
   console.log('🚌 Creando líneas...');

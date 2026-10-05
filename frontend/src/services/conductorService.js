@@ -115,3 +115,34 @@ export function notificarRechazoMock(nroViaje) {
     console.error('[conductorService] Error al rechazar viaje:', err.message)
   );
 }
+
+/**
+ * Avisa al pasajero que el colectivo se acerca a su parada de descenso
+ * (simulado — en producción lo dispararía el GPS).
+ * Reemplaza al TODO de useConductorRealtime → llama al backend real.
+ *
+ * Idempotente en el backend: si ya se notificó este viaje, no vuelve
+ * a emitir el evento al pasajero (ver notificado:false en la respuesta).
+ *
+ * @param {string} nroViaje UUID del viaje
+ */
+export function notificarProximidadMock(nroViaje) {
+  api.notificarProximidad(nroViaje).catch((err) =>
+    console.error('[conductorService] Error al notificar proximidad:', err.message)
+  );
+}
+
+/**
+ * El conductor confirma el descenso del pasajero → llama al backend.
+ * Reemplaza al TODO de useConductorRealtime (confirmarBajada) — misma firma.
+ *
+ * El pasajero se entera en tiempo real vía socket 'descenso:confirmado'
+ * (manejado en pasajeroService → suscribirseABordo).
+ *
+ * @param {string} nroViaje UUID del viaje
+ */
+export function confirmarDescensoMock(nroViaje) {
+  api.confirmarDescenso(nroViaje).catch((err) =>
+    console.error('[conductorService] Error al confirmar descenso:', err.message)
+  );
+}

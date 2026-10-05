@@ -6,6 +6,8 @@ import {
   suscribirsePanelConductor,
   simularAbordajeMock,
   notificarRechazoMock,
+  notificarProximidadMock,
+  confirmarDescensoMock,
 } from "@/services/conductorService";
 
 // Cada cuánto se repite el recordatorio de bajada hasta que el conductor
@@ -36,27 +38,48 @@ export function useConductorRealtime() {
   }, [solicitudes]);
 
   const abordajeTimersRef = useRef({}); // numeroSolicitud -> cleanup
-  const repeticionRef = useRef(null); // setInterval del recordatorio
+  const repeticionRef = useRef(null); // setTimeout del próximo recordatorio
 
   const detenerRepeticion = useCallback(() => {
     if (repeticionRef.current) {
-      clearInterval(repeticionRef.current);
+      clearTimeout(repeticionRef.current);
       repeticionRef.current = null;
     }
   }, []);
 
-  const abrirRecordatorio = useCallback(
+  // Muestra el modal, dice el recordatorio UNA vez, y al terminar de hablar
+  // lo cierra (para que el conductor pueda ver el resto de las solicitudes)
+  // y programa que vuelva a aparecer en REPETICION_RECORDATORIO_MS. Se repite
+  // así hasta que el conductor confirme la bajada (confirmarBajada corta el
+  // ciclo con detenerRepeticion).
+  const programarRecordatorio = useCallback(
     (solicitud) => {
       setRecordatorio({ solicitud });
-
-      const anunciar = () =>
-        encolar(`Recordatorio. El pasajero baja en ${solicitud.paradaDestino}.`);
-
-      anunciar(); // inmediato al abrir
-      detenerRepeticion();
-      repeticionRef.current = setInterval(anunciar, REPETICION_RECORDATORIO_MS);
+      encolar(`Recordatorio. El pasajero baja en ${solicitud.paradaDestino}.`, {
+        onEnd: () => {
+          setRecordatorio(null);
+          repeticionRef.current = setTimeout(
+            () => programarRecordatorio(solicitud),
+            REPETICION_RECORDATORIO_MS
+          );
+        },
+      });
     },
-    [encolar, detenerRepeticion]
+    [encolar]
+  );
+
+  const abrirRecordatorio = useCallback(
+    (solicitud) => {
+      // El recordatorio es nuestra señal simulada de "proximidad a la parada"
+      // (sin GPS real todavía) → avisamos al pasajero vía backend, UNA sola
+      // vez (la idempotencia del backend lo protege igual, pero no hace
+      // falta llamarlo de nuevo en cada repetición del recordatorio).
+      notificarProximidadMock(solicitud.numeroSolicitud);
+
+      detenerRepeticion();
+      programarRecordatorio(solicitud);
+    },
+    [detenerRepeticion, programarRecordatorio]
   );
 
   const manejarEvento = useCallback(
@@ -152,8 +175,9 @@ export function useConductorRealtime() {
             : s
         )
       );
-      // TODO (Socket.io): emitir "descenso_confirmado" de vuelta al pasajero,
-      // que es lo que hoy espera ABordoPage vía simularEventosDeBajadaMock.
+      // El pasajero se entera en tiempo real vía socket 'descenso:confirmado'
+      // (ver pasajeroService → suscribirseABordo, usado en ABordoPage).
+      confirmarDescensoMock(numeroSolicitud);
     },
     [detenerRepeticion, vaciarCola]
   );

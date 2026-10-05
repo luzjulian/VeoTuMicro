@@ -85,6 +85,7 @@ export default function PanelConductorPage() {
           <BandejaSolicitudes
             solicitudes={solicitudes}
             onSeleccionar={handleSeleccionarDeBandeja}
+            onConfirmarBajada={confirmarBajada}
           />
         </PanelSeccion>
       </main>

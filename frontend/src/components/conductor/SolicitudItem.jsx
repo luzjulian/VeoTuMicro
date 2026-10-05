@@ -3,7 +3,7 @@ import { MapPin, User, ArrowRight, Clock } from 'lucide-react';
 import { BadgeEstado } from "@/components/conductor/BadgeEstado";
 import { tiempoTranscurrido } from "@/utils/tiempoTranscurrido";
 
-export function SolicitudItem({ solicitud, onSeleccionar }) {
+export function SolicitudItem({ solicitud, onSeleccionar, onConfirmarBajada }) {
   const esInteractiva = solicitud.estado === "pendiente";
 
   return (
@@ -65,6 +65,22 @@ export function SolicitudItem({ solicitud, onSeleccionar }) {
           )}
           <BadgeEstado variante={solicitud.estado} />
         </div>
+
+        {/* Mientras el pasajero está a bordo, se puede confirmar la bajada
+            en cualquier momento desde acá — sin esperar a que el modal de
+            recordatorio reaparezca (ver useConductorRealtime → programarRecordatorio). */}
+        {solicitud.estado === "a_bordo" && onConfirmarBajada && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onConfirmarBajada(solicitud.numeroSolicitud);
+            }}
+            className="mt-3 w-full bg-estado-exito text-fondo-principal font-bold text-sm h-10 rounded-md transition-opacity hover:opacity-90"
+          >
+            El pasajero ha bajado
+          </button>
+        )}
       </div>
     </div>
   );

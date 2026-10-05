@@ -5,29 +5,37 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/common/FileUpload";
+import { registrar } from "@/services/api/authApi";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     nombre: "",
+    apellido: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
   const [certificado, setCertificado] = useState(null);
   const [error, setError] = useState(null);
+  const [enviando, setEnviando] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
-    if (!formData.nombre || !formData.email || !formData.password) {
+    if (!formData.nombre || !formData.apellido || !formData.email || !formData.password) {
       setError("Completá todos los campos obligatorios.");
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
@@ -41,9 +49,15 @@ export default function RegisterPage() {
       return;
     }
 
-    console.log("Registro submit:", { ...formData, certificado });
-
-    navigate("/registro/pendiente");
+    setEnviando(true);
+    try {
+      await registrar({ ...formData, certificado });
+      navigate("/registro/pendiente");
+    } catch (err) {
+      setError(err.message || "No se pudo enviar la solicitud.");
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -68,10 +82,10 @@ export default function RegisterPage() {
           {/* Nombre */}
           <div className="space-y-2">
             <Label id="nombre-label" htmlFor="nombre" className="text-texto-principal text-lg">
-              Nombre completo
+              Nombre
             </Label>
             <p id="nombre-hint" className="text-acento-secundario text-sm">
-              Ingresa tu nombre y apellido.
+              Ingresa tu nombre.
             </p>
             <Input
               id="nombre"
@@ -79,10 +93,33 @@ export default function RegisterPage() {
               type="text"
               value={formData.nombre}
               onChange={handleChange}
-              placeholder="Pepe Argento"
+              placeholder="Pepe"
               required
               aria-required="true"
               aria-labelledby="nombre-label nombre-hint"
+              aria-describedby={error ? "form-error" : undefined}
+              className="bg-superficie-primaria border-acento-secundario text-texto-principal placeholder:text-acento-secundario/50 text-lg h-12"
+            />
+          </div>
+
+          {/* Apellido */}
+          <div className="space-y-2">
+            <Label id="apellido-label" htmlFor="apellido" className="text-texto-principal text-lg">
+              Apellido
+            </Label>
+            <p id="apellido-hint" className="text-acento-secundario text-sm">
+              Ingresa tu apellido.
+            </p>
+            <Input
+              id="apellido"
+              name="apellido"
+              type="text"
+              value={formData.apellido}
+              onChange={handleChange}
+              placeholder="Argento"
+              required
+              aria-required="true"
+              aria-labelledby="apellido-label apellido-hint"
               aria-describedby={error ? "form-error" : undefined}
               className="bg-superficie-primaria border-acento-secundario text-texto-principal placeholder:text-acento-secundario/50 text-lg h-12"
             />
@@ -175,9 +212,10 @@ export default function RegisterPage() {
 
           <Button
             type="submit"
+            disabled={enviando}
             className="w-full bg-estado-exito hover:bg-estado-exito/80 text-fondo-principal font-bold text-lg h-14"
           >
-            Crear cuenta
+            {enviando ? "Enviando..." : "Crear cuenta"}
           </Button>
 
         </form>

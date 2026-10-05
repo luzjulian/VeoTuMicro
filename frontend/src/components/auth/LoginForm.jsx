@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 export function LoginForm({ rol, onSubmit, textoBoton = "Iniciar sesión" }) {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState(null);
+  const [enviando, setEnviando] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
@@ -22,7 +23,15 @@ export function LoginForm({ rol, onSubmit, textoBoton = "Iniciar sesión" }) {
       return;
     }
 
-    onSubmit?.({ rol, ...formData });
+    // onSubmit puede ser asíncrono: si lanza un error, se muestra en el formulario.
+    setEnviando(true);
+    try {
+      await onSubmit?.({ rol, ...formData });
+    } catch (err) {
+      setError(err.message || "No se pudo iniciar sesión.");
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -76,9 +85,10 @@ export function LoginForm({ rol, onSubmit, textoBoton = "Iniciar sesión" }) {
 
       <Button
         type="submit"
+        disabled={enviando}
         className="w-full bg-estado-exito hover:bg-estado-exito/80 text-fondo-principal font-bold text-lg h-14"
       >
-        {textoBoton}
+        {enviando ? "Ingresando..." : textoBoton}
       </Button>
 
     </form>

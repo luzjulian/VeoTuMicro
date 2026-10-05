@@ -3,11 +3,6 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { EstadoBadge } from "@/components/common/EstadoBadge";
 
-function formatearDNI(dni) {
-  if (!dni) return "";
-  return String(dni).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
 /**
  * Modal accesible para revisar el certificado de discapacidad del pasajero
  * y aceptar/rechazar la solicitud sin salir del dashboard.
@@ -73,9 +68,6 @@ export function CertificadoModal({
               {solicitud.apellido}, {solicitud.nombre}
             </h2>
             <p className="text-acento-secundario text-sm sm:text-base mt-1">
-              DNI: {formatearDNI(solicitud.dni)}
-            </p>
-            <p className="text-acento-secundario/80 text-xs sm:text-sm">
               Certificado de discapacidad
             </p>
           </div>

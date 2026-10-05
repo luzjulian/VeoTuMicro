@@ -1,9 +1,6 @@
 // src/hooks/useAdminKpis.js
 import { useCallback, useEffect, useState } from "react";
-import {
-  obtenerKpisMock,
-  suscribirseAKpisMock,
-} from "@/services/mock/mockAdminService";
+import { obtenerKpis, suscribirseAKpis } from "@/services/adminService";
 
 export function useAdminKpis() {
   const [kpis, setKpis] = useState(null);
@@ -14,7 +11,7 @@ export function useAdminKpis() {
     try {
       setCargando(true);
       setError(null);
-      const data = await obtenerKpisMock();
+      const data = await obtenerKpis();
       setKpis(data);
     } catch (err) {
       setError(err);
@@ -29,7 +26,7 @@ export function useAdminKpis() {
 
   // Suscripción a actualizaciones en vivo (pasajeros activos / conductores en ruta).
   useEffect(() => {
-    const unsubscribe = suscribirseAKpisMock((evento, payload) => {
+    const unsubscribe = suscribirseAKpis((evento, payload) => {
       if (evento === "kpis_actualizados") {
         setKpis((prev) => (prev ? { ...prev, ...payload } : prev));
       }

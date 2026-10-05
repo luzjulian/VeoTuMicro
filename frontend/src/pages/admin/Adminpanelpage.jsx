@@ -8,24 +8,29 @@
 // el admin haya visto el certificado. Las filas de la bandeja solo exponen
 // un botón "Ver" que abre el modal.
 //
+// Si no hay sesión de administrador (el backend responde 401 o 403) se redirige a /login.
 // TODO: envolver esta ruta en un RequireRole('admin') cuando exista AuthContext.
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { KpiGrid } from "@/components/admin/KpiGrid";
 import { SolicitudesBandeja } from "@/components/admin/SolicitudesBandeja";
 import { CertificadoModal } from "@/components/admin/CertificadoModal";
 import { useAdminKpis } from "@/hooks/useAdminKpis";
 import { useSolicitudes } from "@/hooks/useSolicitudes";
+import { logout } from "@/services/api/authApi";
 
 export default function AdminPanelPage() {
-  const { kpis, cargando: cargandoKpis, recargar: recargarKpis } = useAdminKpis();
+  const navigate = useNavigate();
+  const { kpis, cargando: cargandoKpis, error: errorKpis, recargar: recargarKpis } = useAdminKpis();
   const {
     solicitudes,
     solicitudesFiltradas,
     filtroActivo,
     setFiltroActivo,
     cargando: cargandoSolicitudes,
+    error: errorSolicitudes,
     accionEnCurso,
     evaluar,
     recargar: recargarSolicitudes,
@@ -33,6 +38,25 @@ export default function AdminPanelPage() {
 
   const [solicitudEnModal, setSolicitudEnModal] = useState(null);
   const [feedback, setFeedback] = useState(null); // { tipo, mensaje }
+
+  // Sin sesión de administrador: de vuelta al login.
+  const sesionInvalida = [errorKpis, errorSolicitudes].some(
+    (e) => e?.status === 401 || e?.status === 403
+  );
+  useEffect(() => {
+    if (sesionInvalida) navigate("/login", { replace: true });
+  }, [sesionInvalida, navigate]);
+
+  const hayErrorDeCarga = !sesionInvalida && Boolean(errorKpis || errorSolicitudes);
+
+  const handleCerrarSesion = useCallback(async () => {
+    try {
+      await logout();
+    } catch {
+      // Aunque falle el cierre en el servidor, volvemos al login.
+    }
+    navigate("/login", { replace: true });
+  }, [navigate]);
 
   const mostrarFeedback = useCallback((tipo, mensaje) => {
     setFeedback({ tipo, mensaje });
@@ -50,11 +74,18 @@ export default function AdminPanelPage() {
   const handleAceptar = useCallback(
     async (solicitud) => {
       try {
-        await evaluar(solicitud.id, "aceptar");
-        mostrarFeedback(
-          "exito",
-          `Solicitud aceptada — ${solicitud.nombre} ${solicitud.apellido}`
-        );
+        const resultado = await evaluar(solicitud.id, "aceptar");
+        if (resultado?.mailEnviado === false) {
+          mostrarFeedback(
+            "error",
+            "Solicitud aceptada, pero no se pudo enviar el mail a la persona."
+          );
+        } else {
+          mostrarFeedback(
+            "exito",
+            `Solicitud aceptada — ${solicitud.nombre} ${solicitud.apellido}`
+          );
+        }
         cerrarModal();
         recargarKpis();
       } catch {
@@ -67,11 +98,18 @@ export default function AdminPanelPage() {
   const handleRechazar = useCallback(
     async (solicitud) => {
       try {
-        await evaluar(solicitud.id, "rechazar");
-        mostrarFeedback(
-          "exito",
-          `Solicitud rechazada — ${solicitud.nombre} ${solicitud.apellido}`
-        );
+        const resultado = await evaluar(solicitud.id, "rechazar");
+        if (resultado?.mailEnviado === false) {
+          mostrarFeedback(
+            "error",
+            "Solicitud rechazada, pero no se pudo enviar el mail a la persona."
+          );
+        } else {
+          mostrarFeedback(
+            "exito",
+            `Solicitud rechazada — ${solicitud.nombre} ${solicitud.apellido}`
+          );
+        }
         cerrarModal();
         recargarKpis();
       } catch {
@@ -100,14 +138,29 @@ export default function AdminPanelPage() {
               Panel administrativo
             </p>
           </div>
-          <Button
-            onClick={handleActualizar}
-            variant="outline"
-            className="border-acento-secundario text-acento-primario hover:bg-superficie-primaria font-bold h-10 px-4"
-          >
-            Actualizar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleActualizar}
+              variant="outline"
+              className="border-acento-secundario text-acento-primario hover:bg-superficie-primaria font-bold h-10 px-4"
+            >
+              Actualizar
+            </Button>
+            <Button
+              onClick={handleCerrarSesion}
+              variant="outline"
+              className="border-acento-secundario text-acento-primario hover:bg-superficie-primaria font-bold h-10 px-4"
+            >
+              Cerrar sesión
+            </Button>
+          </div>
         </header>
+
+        {hayErrorDeCarga && (
+          <p role="alert" className="text-estado-error text-base font-medium">
+            No se pudieron cargar los datos del panel. Probá con "Actualizar".
+          </p>
+        )}
 
         {/* KPIs */}
         <KpiGrid kpis={kpis} cargando={cargandoKpis} />

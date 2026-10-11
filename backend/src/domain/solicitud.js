@@ -36,9 +36,16 @@ const separarNombre = (nombreApellido) => {
   return { nombre: partes.join(' '), apellido };
 };
 
+// Si la solicitud guardó nombre y apellido por separado se usan tal cual; si no (registros
+// anteriores o enviados con un solo campo), se separan con la regla de arriba.
+const nombresParaMostrar = (s) =>
+  s.nombre && s.apellido
+    ? { nombre: s.nombre, apellido: s.apellido }
+    : separarNombre(s.nombreApellido);
+
 const toSolicitudDTO = (s) => ({
   id:                s.oid,
-  ...separarNombre(s.nombreApellido),
+  ...nombresParaMostrar(s),
   dni:               s.dni ?? null,
   fechaHoraRegistro: s.createdAt.toISOString(),
   estado:            ESTADO_A_FRONT[s.estado],

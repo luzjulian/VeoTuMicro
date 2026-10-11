@@ -36,7 +36,8 @@ const options = {
           type: 'object',
           required: ['nombre', 'email', 'password', 'certificado'],
           properties: {
-            nombre:          { type: 'string', example: 'Pepe Argento', description: 'Nombre completo' },
+            nombre:          { type: 'string', example: 'Pepe', description: 'Nombre (si no se envía apellido, se toma como nombre completo)' },
+            apellido:        { type: 'string', example: 'Argento', description: 'Apellido (recomendado)' },
             email:           { type: 'string', format: 'email', example: 'pepeargento@correo.com', description: 'Será el nombre de usuario' },
             password:        { type: 'string', format: 'password', minLength: 8, maxLength: 72, example: 'miPassword123' },
             confirmPassword: { type: 'string', format: 'password', description: 'Opcional; si se envía debe coincidir con password' },

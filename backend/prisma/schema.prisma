@@ -116,7 +116,9 @@ enum EstadoSolicitud {
 
 model SolicitudRegistro {
   oid               Int             @id @default(autoincrement())
-  nombreApellido    String
+  nombreApellido    String          // nombre completo ("Nombre Apellido")
+  nombre            String?         // por separado, para mostrar bien "Apellido, Nombre" en el panel
+  apellido          String?
   dni               String?
   fechaNacimiento   DateTime?
   email             String          // también será el nombreUsuario de la Cuenta

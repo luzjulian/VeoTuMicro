@@ -1,7 +1,7 @@
 // src/components/conductor/BandejaSolicitudes.jsx
 import { SolicitudItem } from "@/components/conductor/SolicitudItem";
 
-export function BandejaSolicitudes({ solicitudes, onSeleccionar }) {
+export function BandejaSolicitudes({ solicitudes, onSeleccionar, onConfirmarBajada }) {
   if (solicitudes.length === 0) {
     return (
       <p className="text-sm text-acento-secundario text-center py-8">
@@ -14,7 +14,11 @@ export function BandejaSolicitudes({ solicitudes, onSeleccionar }) {
     <ul className="space-y-3" aria-label="Bandeja de solicitudes">
       {solicitudes.map((s) => (
         <li key={s.numeroSolicitud}>
-          <SolicitudItem solicitud={s} onSeleccionar={onSeleccionar} />
+          <SolicitudItem
+            solicitud={s}
+            onSeleccionar={onSeleccionar}
+            onConfirmarBajada={onConfirmarBajada}
+          />
         </li>
       ))}
     </ul>

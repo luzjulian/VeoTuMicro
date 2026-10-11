@@ -77,5 +77,23 @@ export function createViajesApi(devUser) {
      */
     confirmarAscenso: (nroViaje) =>
       fetchJson(`${BASE}/${nroViaje}/abordo`, { method: 'POST' }),
+
+    /**
+     * POST /api/viajes/:nroViaje/proximidad
+     * Avisa al pasajero que se acerca a su parada de descenso (simulado).
+     * Idempotente en el backend: reintentar no reemite el evento.
+     * @param {number} nroViaje ID autoincremental del viaje
+     */
+    notificarProximidad: (nroViaje) =>
+      fetchJson(`${BASE}/${nroViaje}/proximidad`, { method: 'POST' }),
+
+    /**
+     * POST /api/viajes/:nroViaje/descenso
+     * Confirma el descenso del pasajero → viaje pasa a FINALIZADO.
+     * Idempotente en el backend: reintentar devuelve el mismo resultado.
+     * @param {number} nroViaje ID autoincremental del viaje
+     */
+    confirmarDescenso: (nroViaje) =>
+      fetchJson(`${BASE}/${nroViaje}/descenso`, { method: 'POST' }),
   };
 }

@@ -90,6 +90,12 @@ const buscarViaje = async (nroViaje) => {
   return viaje;
 };
 
+// Viajes a los que ya se les avisó la proximidad de la parada de descenso.
+// Evita re-emitir el evento si el request se reintenta (red inestable, doble
+// click). Vive en memoria: se vacía si el server reinicia y no se comparte entre
+// instancias. Para un solo server alcanza; si el proyecto escala, pasar a la BD.
+const proximidadNotificada = new Set();
+
 // ---------------------------------------------------------------------------
 // Casos de uso
 // ---------------------------------------------------------------------------
@@ -361,9 +367,99 @@ const confirmarAscenso = async ({ cuentaOid, nroViaje, io }) => {
   return { estado: 'ABORDO' };
 };
 
+/**
+ * UC5 – Notificar Proximidad (Actor: Conductor)
+ *
+ * Simula el aviso "te estás acercando a tu parada de descenso".
+ * En un caso real lo dispararía el GPS; acá se expone como endpoint.
+ * 1. Verifica viaje y estado ABORDO.
+ * 2. Valida que el conductor autenticado es el asignado al viaje.
+ * 3. Notifica al pasajero (una sola vez por viaje: idempotente).
+ */
+const notificarProximidad = async ({ cuentaOid, nroViaje, io }) => {
+  const viaje = await buscarViaje(nroViaje);
+
+  const cuentaAsignada = viaje.conduce.chofer.persona.cuenta;
+  if (!cuentaAsignada || cuentaAsignada.oid !== cuentaOid) {
+    throw new ForbiddenError('No tenés permiso para notificar este viaje');
+  }
+
+  if (viaje.estado !== 'ABORDO') {
+    throw new BadRequestError(
+      `No se puede notificar la proximidad: el estado del viaje es ${viaje.estado}`
+    );
+  }
+
+  // Idempotencia: un reintento no vuelve a avisarle al pasajero.
+  if (proximidadNotificada.has(nroViaje)) {
+    return { notificado: false, mensaje: 'La proximidad ya había sido notificada' };
+  }
+
+  const pasajeroUsername = viaje.pasajero.persona.cuenta?.nombreUsuario;
+  if (pasajeroUsername) {
+    io.to(`pasajero:${pasajeroUsername}`).emit('viaje:proximidad', {
+      nroViaje,
+      mensaje: 'Te estás acercando a tu parada de descenso',
+    });
+  }
+
+  proximidadNotificada.add(nroViaje);
+
+  return { notificado: true, mensaje: 'Notificación de proximidad enviada' };
+};
+
+/**
+ * UC6 – Confirmar Descenso (Actor: Conductor)
+ *
+ * El conductor confirma que el pasajero bajó del colectivo.
+ * 1. Verifica el viaje y que el conductor autenticado es el asignado.
+ * 2. Si ya estaba FINALIZADO devuelve 200 sin volver a notificar (idempotente:
+ *    es casi seguro un reintento de red del mismo pedido).
+ * 3. Si no está en ABORDO es un pedido sin sentido → 400.
+ * 4. Actualiza estado a FINALIZADO y notifica al pasajero.
+ */
+const confirmarDescenso = async ({ cuentaOid, nroViaje, io }) => {
+  const viaje = await buscarViaje(nroViaje);
+
+  const cuentaAsignada = viaje.conduce.chofer.persona.cuenta;
+  if (!cuentaAsignada || cuentaAsignada.oid !== cuentaOid) {
+    throw new ForbiddenError('No tenés permiso para confirmar el descenso de este viaje');
+  }
+
+  if (viaje.estado === 'FINALIZADO') {
+    return { estado: 'FINALIZADO' };
+  }
+
+  if (viaje.estado !== 'ABORDO') {
+    throw new BadRequestError(
+      `No se puede confirmar el descenso: el estado del viaje es ${viaje.estado}`
+    );
+  }
+
+  await prisma.viaje.update({
+    where: { oid: nroViaje },
+    data:  { estado: 'FINALIZADO', fechaHoraFin: new Date() },
+  });
+
+  // El viaje terminó: ya no hace falta recordar su aviso de proximidad.
+  proximidadNotificada.delete(nroViaje);
+
+  const pasajeroUsername = viaje.pasajero.persona.cuenta?.nombreUsuario;
+  if (pasajeroUsername) {
+    io.to(`pasajero:${pasajeroUsername}`).emit('descenso:confirmado', {
+      nroViaje,
+      mensaje: 'El conductor confirmó tu descenso',
+    });
+  }
+
+  return { estado: 'FINALIZADO' };
+};
+
 module.exports = {
   iniciarViaje,
   confirmarViaje,
   rechazarViaje,
   confirmarAscenso,
+  notificarProximidad,
+  confirmarDescenso,
 };

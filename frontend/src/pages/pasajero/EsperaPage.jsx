@@ -145,13 +145,15 @@ export default function EsperaPage() {
       </div>
 
       <div className="mt-auto space-y-3">
-        <button
-          type="button"
-          onClick={handleYaSubi}
-          className="w-full bg-estado-exito text-fondo-principal font-bold text-lg h-14 rounded-md"
-        >
-          Ya subí al colectivo
-        </button>
+        {conductorConfirmo && (
+          <button
+            type="button"
+            onClick={handleYaSubi}
+            className="w-full bg-estado-exito text-fondo-principal font-bold text-lg h-14 rounded-md"
+          >
+            Ya subí al colectivo
+          </button>
+        )}
         <button
           type="button"
           onClick={cancelarPorTap}

@@ -1,7 +1,8 @@
 // src/pages/pasajero/ABordoPage.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { simularEventosDeBajadaMock } from "@/services/mock/mockRealtimeService";
+// 🔁 Swap: mock → servicio real (mismos nombres de evento; ahora requiere nroViaje)
+import { suscribirseABordo } from "@/services/pasajeroService";
 import { useVoiceQueue } from "@/hooks/useVoiceQueue";
 
 export default function ABordoPage() {
@@ -21,7 +22,7 @@ export default function ABordoPage() {
     encolar("Se le ha notificado al conductor tu destino");
     encolar("El conductor te avisará cuando debas bajar");
 
-    const unsubscribe = simularEventosDeBajadaMock((evento) => {
+    const unsubscribe = suscribirseABordo(viaje.numeroSolicitud, (evento) => {
       if (evento === "conductor_va_a_detenerse") {
         setConductorVaADetenerse(true);
         encolar(`Preparate para bajar en ${viaje.paradaDestino}`);

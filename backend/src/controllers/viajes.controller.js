@@ -125,9 +125,55 @@ const confirmarAscenso = async (req, res, next) => {
   }
 };
 
+/**
+ * POST /api/viajes/:nroViaje/proximidad
+ * Rol requerido: chofer
+ *
+ * Respuesta 200:
+ *   { notificado: boolean, mensaje: string }
+ *   + Socket event 'viaje:proximidad' al pasajero (solo la primera vez)
+ */
+const notificarProximidad = async (req, res, next) => {
+  try {
+    const resultado = await viajesService.notificarProximidad({
+      cuentaOid: getCuentaOid(req),
+      nroViaje:  getNroViaje(req),
+      io:        getIo(req),
+    });
+
+    res.status(200).json(resultado);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/viajes/:nroViaje/descenso
+ * Rol requerido: chofer
+ *
+ * Respuesta 200:
+ *   { estado: 'FINALIZADO' }
+ *   + Socket event 'descenso:confirmado' al pasajero (solo la primera vez)
+ */
+const confirmarDescenso = async (req, res, next) => {
+  try {
+    const resultado = await viajesService.confirmarDescenso({
+      cuentaOid: getCuentaOid(req),
+      nroViaje:  getNroViaje(req),
+      io:        getIo(req),
+    });
+
+    res.status(200).json(resultado);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   iniciarViaje,
   confirmarViaje,
   rechazarViaje,
   confirmarAscenso,
+  notificarProximidad,
+  confirmarDescenso,
 };

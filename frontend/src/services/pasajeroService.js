@@ -147,3 +147,39 @@ export function notificarCancelacionAlConductor(nroViaje) {
 export async function confirmarAscenso(nroViaje) {
   return api.confirmarAscenso(nroViaje);
 }
+
+/**
+ * Suscribe al pasajero (ya a bordo) a los eventos de descenso vía Socket.io.
+ * Reemplaza simularEventosDeBajadaMock — misma interfaz por callback
+ * (los nombres de evento que recibe onEvent son los mismos del mock,
+ * así ABordoPage no necesita tocar su lógica, solo el import).
+ *
+ * Eventos emitidos al onEvent:
+ *   conductor_va_a_detenerse → {}  (viaje:proximidad del backend)
+ *   descenso_confirmado      → {}  (descenso:confirmado del backend)
+ *
+ * @param {number} nroViaje ID autoincremental del viaje
+ * @param {(evento: string) => void} onEvent
+ * @returns {() => void} cleanup
+ */
+export function suscribirseABordo(nroViaje, onEvent) {
+  const s = socket();
+
+  const handleProximidad = (payload) => {
+    if (payload.nroViaje !== nroViaje) return;
+    onEvent('conductor_va_a_detenerse');
+  };
+
+  const handleDescenso = (payload) => {
+    if (payload.nroViaje !== nroViaje) return;
+    onEvent('descenso_confirmado');
+  };
+
+  s.on('viaje:proximidad',     handleProximidad);
+  s.on('descenso:confirmado',  handleDescenso);
+
+  return () => {
+    s.off('viaje:proximidad',    handleProximidad);
+    s.off('descenso:confirmado', handleDescenso);
+  };
+}

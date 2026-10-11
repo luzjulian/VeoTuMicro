@@ -2,6 +2,7 @@ const { Router } = require('express');
 const authController = require('../controllers/auth.controller');
 const { validate }      = require('../middlewares/validate');
 const { authRateLimit } = require('../middlewares/rate-limit');
+const { subirCertificado, borrarArchivoSiFalla } = require('../middlewares/upload');
 const { loginSchema, registerSchema } = require('../domain/cuenta');
 
 const router = Router();
@@ -17,30 +18,40 @@ const router = Router();
  * @swagger
  * /api/auth/register:
  *   post:
- *     summary: Registra un nuevo pasajero
- *     description: Solo los pasajeros pueden registrarse desde la app. Administrativos y choferes son cargados directamente en la BD.
+ *     summary: Solicita el registro de un pasajero
+ *     description: >
+ *       Solo los pasajeros se registran desde la app (administrativos y choferes se cargan en la BD).
+ *       NO crea el usuario: guarda una solicitud pendiente con los datos y el certificado de discapacidad (PDF).
+ *       Cuando un administrativo la acepta se crea la cuenta (el email es el nombre de usuario) y se avisa por mail.
+ *       Si la rechaza, también se avisa por mail y la persona puede volver a registrarse.
  *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/components/schemas/RegisterInput'
  *     responses:
  *       201:
- *         description: Pasajero registrado correctamente
+ *         description: Solicitud recibida, pendiente de validación
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SuccessMessage'
+ *               $ref: '#/components/schemas/RegisterResponse'
  *       400:
- *         description: Datos inválidos
+ *         description: Datos inválidos, archivo que no es PDF o certificado faltante
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       409:
- *         description: El nombre de usuario ya está en uso
+ *         description: Ya existe una cuenta o una solicitud en curso con esos datos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       413:
+ *         description: El certificado supera el tamaño máximo
  *         content:
  *           application/json:
  *             schema:
@@ -52,14 +63,26 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/register', authRateLimit, validate(registerSchema), authController.register);
+// Orden: límite de intentos -> subida del PDF -> validación de los datos -> controller.
+// borrarArchivoSiFalla va al final: si algo falla después de guardar el PDF, lo borra.
+router.post(
+  '/register',
+  authRateLimit,
+  subirCertificado,
+  validate(registerSchema),
+  authController.register,
+  borrarArchivoSiFalla
+);
 
 /**
  * @swagger
  * /api/auth/login:
  *   post:
  *     summary: Inicia sesión
- *     description: Válido para pasajeros, choferes y administrativos.
+ *     description: >
+ *       Válido para pasajeros, choferes y administrativos. Se entra con el email y la contraseña
+ *       (también se acepta nombreUsuario y contrasenia). Un pasajero con solicitud pendiente o rechazada
+ *       no tiene cuenta todavía y recibe 401.
  *     tags: [Auth]
  *     requestBody:
  *       required: true

@@ -25,6 +25,27 @@ const envSchema = z.object({
   AUTH_RATE_LIMIT_MAX:       z.coerce.number().int().positive().default(5),
   GLOBAL_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
   GLOBAL_RATE_LIMIT_MAX:       z.coerce.number().int().positive().default(300),
+
+  // Certificados de discapacidad (PDF) subidos en el registro
+  UPLOADS_DIR:        z.string().min(1).default('./uploads/certificados'),
+  MAX_CERTIFICADO_MB: z.coerce.number().positive().default(5),
+
+  // Mail (nodemailer). En desarrollo, si falta SMTP_HOST el mail NO se envía:
+  // se imprime en consola. En producción SMTP_HOST es obligatorio (ver superRefine).
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  MAIL_FROM: z.string().min(1).default('VeoTuMicro <no-reply@veotumicro.local>'),
+  APP_URL:   z.string().default('http://localhost:5173'),
+}).superRefine((v, ctx) => {
+  if (v.NODE_ENV === 'production' && !v.SMTP_HOST) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SMTP_HOST'],
+      message: 'SMTP_HOST es obligatoria en producción (sin ella no se pueden enviar los mails de validación)',
+    });
+  }
 });
 
 const parsed = envSchema.safeParse(process.env);

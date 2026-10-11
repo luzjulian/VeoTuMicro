@@ -1,7 +1,7 @@
 const prisma = require('../config/prisma');
-const { hashPassword, verifyPassword }                        = require('../lib/password');
+const { verifyPassword }                                      = require('../lib/password');
 const { signAccessToken, generateRefreshToken, hashRefreshToken, parseExpiresInToMs } = require('../lib/tokens');
-const { ConflictError, UnauthorizedError, NotFoundError }     = require('../lib/http-errors');
+const { UnauthorizedError, NotFoundError }                    = require('../lib/http-errors');
 const { env } = require('../config/env');
 
 // ─── Helpers internos ─────────────────────────────────────────────────────────
@@ -35,8 +35,18 @@ const DUMMY_HASH = '$2b$12$1Uh9BsrhDzktXsmkLZlB5ejomBEVoHbEtFvty.pDh4PDs2T7nU0F.
 
 // ─── Funciones exportadas ─────────────────────────────────────────────────────
 
-const login = async ({ nombreUsuario, contrasenia }) => {
-  const cuenta = await prisma.cuenta.findUnique({ where: { nombreUsuario } });
+// `identificador` es el email que escribe la persona en el login (o un nombreUsuario de las
+// cuentas anteriores). Las cuentas nuevas usan el email como nombreUsuario; las cargadas a mano
+// (choferes, administrativos) pueden tener otro nombreUsuario y el email en Persona.
+const login = async ({ identificador, contrasenia }) => {
+  const cuenta = await prisma.cuenta.findFirst({
+    where: {
+      OR: [
+        { nombreUsuario: identificador },
+        { persona: { email: identificador } },
+      ],
+    },
+  });
 
   const hashAComparar = cuenta?.contrasenia ?? DUMMY_HASH;
   const passwordOk    = await verifyPassword(contrasenia, hashAComparar);
@@ -49,36 +59,6 @@ const login = async ({ nombreUsuario, contrasenia }) => {
   const tokens = await emitirTokens(cuenta, rol);
 
   return { ...tokens, nombreUsuario: cuenta.nombreUsuario, rol };
-};
-
-// Solo los pasajeros pueden registrarse desde la app.
-// Los administrativos y choferes son cargados directamente en la BD.
-const register = async ({ dni, nombreUsuario, contrasenia, nombreApellido, fechaNacimiento, certificadoDiscapacidad }) => {
-
-  const existeUsuario = await prisma.cuenta.findUnique({ where: { nombreUsuario } });
-  if (existeUsuario) throw new ConflictError('El nombre de usuario ya está en uso');
-
-  const hash = await hashPassword(contrasenia);
-
-  await prisma.$transaction(async (tx) => {
-    const persona = await tx.persona.create({
-      data: { dni, nombreApellido, fechaNacimiento: new Date(fechaNacimiento) },
-    });
-
-    await tx.cuenta.create({
-      data: { dni, nombreUsuario, contrasenia: hash, personaOid: persona.oid },
-    });
-
-    await tx.pasajero.create({
-      data: {
-        personaOid:              persona.oid,
-        certificadoDiscapacidad: certificadoDiscapacidad,
-        adminOid:                null, // pendiente de validación por un administrativo
-      },
-    });
-  });
-
-  return { message: 'Usuario registrado correctamente' };
 };
 
 const refresh = async (rawRefreshToken) => {
@@ -115,4 +95,4 @@ const logout = async (rawRefreshToken) => {
   });
 };
 
-module.exports = { login, register, refresh, logout };
+module.exports = { login, refresh, logout };

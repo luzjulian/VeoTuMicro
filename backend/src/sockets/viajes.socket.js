@@ -7,6 +7,7 @@
 // Rooms utilizadas:
 //   conductor:{nombreUsuario}  →  recibe 'nueva:solicitud', 'pasajero:abordo'
 //   pasajero:{nombreUsuario}   →  recibe 'viaje:confirmado', 'viaje:cancelado'
+//   admins                     →  recibe 'kpis_actualizados', 'solicitud:nueva'
 //
 // Eventos que el SERVER emite (desde los services):
 //   nueva:solicitud   → { nroViaje, parada, destino }
@@ -79,8 +80,12 @@ const initSocket = (io) => {
     } else if (rol === 'pasajero') {
       socket.join(`pasajero:${nombreUsuario}`);
       console.log(`🧑 [Socket] Pasajero conectado:  pasajero:${nombreUsuario}`);
+    } else if (rol === 'administrativo') {
+      // Panel administrativo: recibe 'kpis_actualizados' y 'solicitud:nueva'
+      socket.join('admins');
+      console.log(`👔 [Socket] Administrativo conectado: admins (${nombreUsuario})`);
     } else {
-      // Administrativos y otros roles no usan rooms de viaje
+      // Otros roles no usan rooms de viaje
       console.log(`👤 [Socket] Usuario conectado sin room de viaje: ${nombreUsuario} (${rol})`);
     }
 

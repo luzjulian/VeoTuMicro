@@ -1,4 +1,5 @@
 const authService = require('../services/auth.service');
+const solicitudesService = require('../services/solicitudes.service');
 const {
   setRefreshCookie,
   clearRefreshCookie,
@@ -24,8 +25,16 @@ const login = async (req, res, next) => {
 
 const register = async (req, res, next) => {
   try {
-    const result = await authService.register(req.validated.body);
-    res.status(201).json(result);
+    // El registro no crea el usuario: guarda una solicitud pendiente de validación.
+    await solicitudesService.crearSolicitud({
+      datos:   req.validated.body,
+      archivo: req.file,
+      io:      req.app.get('io'),
+    });
+    res.status(201).json({
+      message: 'Solicitud enviada. Te avisaremos por mail cuando validemos tu certificado',
+      estado:  'pendiente',
+    });
   } catch (err) {
     next(err);
   }

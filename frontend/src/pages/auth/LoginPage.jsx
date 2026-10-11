@@ -1,16 +1,25 @@
 // frontend/src/pages/auth/LoginPage.jsx
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { login, logout, ROL_DE_PESTANIA, RUTA_POR_ROL } from "@/services/api/authApi";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("pasajero");
 
-  const handleLogin = (data) => {
-    // data = { rol, email, password }
-    // Acá después conectamos el fetch/axios al backend
-    console.log("Login submit:", data);
+  // data = { rol, email, password }. Si algo falla, el error se lanza y LoginForm lo muestra.
+  const handleLogin = async ({ rol, email, password }) => {
+    const sesion = await login({ email, password });
+
+    // La pestaña elegida tiene que coincidir con el rol real de la cuenta.
+    if (sesion.rol !== ROL_DE_PESTANIA[rol]) {
+      await logout().catch(() => {});
+      throw new Error(`Esta cuenta no es de ${rol.toLowerCase()}. Elegí la pestaña que corresponde.`);
+    }
+
+    navigate(RUTA_POR_ROL[sesion.rol]);
   };
 
   return (

@@ -2,12 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { EstadoBadge } from "@/components/common/EstadoBadge";
 
-function formatearDNI(dni) {
-  if (!dni) return "";
-  // Formato AR con puntos de miles: 12345678 → 12.345.678
-  return String(dni).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
 function formatearFechaEnvio(iso) {
   try {
     const d = new Date(iso);
@@ -27,7 +21,7 @@ function formatearFechaEnvio(iso) {
  * modal, después de haber visto el certificado. El único botón acá es "Ver".
  */
 export function SolicitudRow({ solicitud, onVer }) {
-  const { nombre, apellido, dni, fechaHoraRegistro, estado } = solicitud;
+  const { nombre, apellido, fechaHoraRegistro, estado } = solicitud;
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-4 border-b border-superficie-media/30 last:border-b-0">
@@ -35,9 +29,6 @@ export function SolicitudRow({ solicitud, onVer }) {
       <div className="flex-1 min-w-0">
         <p className="text-texto-principal text-base sm:text-lg font-bold truncate">
           {apellido}, {nombre}
-        </p>
-        <p className="text-texto-secundario text-sm sm:text-base">
-          DNI: {formatearDNI(dni)}
         </p>
         <p className="text-texto-secundario text-xs sm:text-sm">
           Enviada: {formatearFechaEnvio(fechaHoraRegistro)}

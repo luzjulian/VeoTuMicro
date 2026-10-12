@@ -1,9 +1,6 @@
 // src/hooks/useSolicitudes.js
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  evaluarSolicitudMock,
-  obtenerSolicitudesMock,
-} from "@/services/mock/mockAdminService";
+import { evaluarSolicitud, obtenerSolicitudes } from "@/services/adminService";
 
 export const FILTROS = ["todas", "pendiente", "aceptado", "rechazado"];
 
@@ -18,7 +15,7 @@ export function useSolicitudes() {
     try {
       setCargando(true);
       setError(null);
-      const data = await obtenerSolicitudesMock();
+      const data = await obtenerSolicitudes();
       // Ordenamos: pendientes primero, luego por fecha desc.
       data.sort((a, b) => {
         if (a.estado === "pendiente" && b.estado !== "pendiente") return -1;
@@ -47,14 +44,14 @@ export function useSolicitudes() {
 
   const evaluar = useCallback(async (id, decision) => {
     setAccionEnCurso(id);
-    // Optimistic update: reflejamos el cambio antes de que responda el mock.
+    // Optimistic update: reflejamos el cambio antes de que responda el servidor.
     const nuevoEstado = decision === "aceptar" ? "aceptado" : "rechazado";
     setSolicitudes((prev) =>
       prev.map((s) => (s.id === id ? { ...s, estado: nuevoEstado } : s))
     );
 
     try {
-      const actualizada = await evaluarSolicitudMock(id, decision);
+      const actualizada = await evaluarSolicitud(id, decision);
       setSolicitudes((prev) =>
         prev.map((s) => (s.id === id ? actualizada : s))
       );

@@ -341,4 +341,58 @@ router.post(
   viajesController.confirmarDescenso
 );
 
+/**
+ * @swagger
+ * /api/viajes/{nroViaje}/cancelar:
+ *   post:
+ *     summary: Cancela la solicitud de viaje (pasajero)
+ *     description: >
+ *       El pasajero cancela su solicitud antes de subir al colectivo.
+ *       El viaje pasa a CANCELADO, se sella fechaHoraFin y se notifica al
+ *       conductor asignado vía Socket.io (evento solicitud:cancelada) para
+ *       que libere el cupo y saque la solicitud de su bandeja.
+ *       Solo se permite desde PENDIENTE o CONFIRMADO: una vez ABORDO el viaje
+ *       ya está en curso y lo cierra el conductor con el descenso.
+ *       Es idempotente: si el viaje ya estaba CANCELADO devuelve 200 con
+ *       notificado=false y no vuelve a emitir el evento.
+ *     tags: [Viajes]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: nroViaje
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Viaje cancelado (o ya cancelado previamente)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 estado:
+ *                   type: string
+ *                   example: "CANCELADO"
+ *                 notificado:
+ *                   type: boolean
+ *                   example: true
+ *       400:
+ *         description: El viaje ya está ABORDO o FINALIZADO
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No es tu viaje
+ *       404:
+ *         description: Viaje no encontrado
+ */
+router.post(
+  '/:nroViaje/cancelar',
+  requireAuth,
+  soloRol('pasajero'),
+  validate(nroViajeParamSchema, 'params'),
+  viajesController.cancelarViaje
+);
+
 module.exports = router;                                                                             

@@ -1,10 +1,7 @@
 // src/services/pasajeroService.js
 //
-// Reemplaza mockRealtimeService.js — misma interfaz, llamadas reales.
-//
-// Swap de 1 línea en cada importador:
-//   ANTES: import { ... } from '@/services/mock/mockRealtimeService'
-//   AHORA: import { ... } from '@/services/pasajeroService'
+// Capa de acceso del flujo del Pasajero: encapsula el backend REST (/api/viajes)
+// y los eventos de Socket.io. Las páginas no saben de transporte.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { getSocket }       from './socket.js';
@@ -50,7 +47,6 @@ function iniciarCicloArribo(nroViaje, minutosIniciales, onEvent) {
 
 /**
  * Crea un viaje en el backend.
- * Reemplaza crearSolicitudMock — ahora es ASYNC.
  *
  * Genera un UUID v4 como Idempotency-Key antes de llamar al backend,
  * lo que evita viajes duplicados si la red falla y el usuario reintenta.
@@ -65,7 +61,6 @@ export async function crearSolicitud({ nroParada, nroLinea, ramal, destino }) {
 
 /**
  * Suscribe al pasajero a los eventos de su viaje vía Socket.io.
- * Reemplaza suscribirseAViajeMock.
  *
  * Eventos emitidos al onEvent:
  *   conductor_confirmado → { numeroSolicitud, minutosIniciales }
@@ -105,7 +100,6 @@ export function suscribirseAViaje(nroViaje, onEvent) {
 
 /**
  * Reinicia el ciclo de arribo (pasajero dijo que no pudo abordar).
- * Reemplaza reiniciarCicloArriboMock.
  *
  * @param {string} nroViaje
  * @param {(evento: string, payload: object) => void} onEvent
@@ -129,17 +123,22 @@ export function reiniciarCicloArribo(nroViaje, onEvent) {
 }
 
 /**
- * Notifica al conductor que el pasajero canceló (no implementado aún en backend).
- * Reemplaza notificarCancelacionAlConductorMock.
+ * Cancela el viaje en el backend. El conductor se entera en tiempo real vía
+ * socket 'solicitud:cancelada' (ver conductorService → suscribirsePanelConductor).
+ *
+ * A diferencia del resto de las acciones de este servicio, propaga el error en
+ * lugar de tragárselo: quien llama necesita saber si la cancelación realmente
+ * ocurrió para no sacar al pasajero de la espera con el viaje todavía vivo.
+ *
+ * @param {number} nroViaje
+ * @returns {Promise<{ estado: 'CANCELADO', notificado: boolean }>}
  */
-export function notificarCancelacionAlConductor(nroViaje) {
-  // TODO: cuando haya endpoint de cancelación, llamar a la API aquí
-  console.info(`[pasajeroService] Cancelación local del viaje ${nroViaje}`);
+export async function notificarCancelacionAlConductor(nroViaje) {
+  return api.cancelarViaje(nroViaje);
 }
 
 /**
  * Confirma el ascenso al colectivo → notifica al conductor vía backend.
- * NUEVO — no existía en el mock.
  *
  * @param {string} nroViaje
  */
@@ -149,9 +148,6 @@ export async function confirmarAscenso(nroViaje) {
 
 /**
  * Suscribe al pasajero (ya a bordo) a los eventos de descenso vía Socket.io.
- * Reemplaza simularEventosDeBajadaMock — misma interfaz por callback
- * (los nombres de evento que recibe onEvent son los mismos del mock,
- * así ABordoPage no necesita tocar su lógica, solo el import).
  *
  * Eventos emitidos al onEvent:
  *   conductor_va_a_detenerse → {}  (viaje:proximidad del backend)

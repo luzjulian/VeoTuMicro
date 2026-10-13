@@ -3,42 +3,72 @@
     { "nroLinea": "307", "ramal": "A", "estimadoArribo": 5,  "dniChofer": "30111222" },
     { "nroLinea": "307", "ramal": "A", "estimadoArribo": 14, "dniChofer": "30333444" },
     { "nroLinea": "214", "ramal": "D", "estimadoArribo": 8,  "dniChofer": "30555666" },
-    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 11, "dniChofer": "30999000" }
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 15, "dniChofer": "30777888" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 11, "dniChofer": "30999000" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 18, "dniChofer": "30888111" }
   ],
   "0002": [
     { "nroLinea": "307", "ramal": "A", "estimadoArribo": 6,  "dniChofer": "30111222" },
-    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 3,  "dniChofer": "30555666" }
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 13, "dniChofer": "30333444" },
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 3,  "dniChofer": "30555666" },
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 10, "dniChofer": "30777888" }
   ],
   "0003": [
     { "nroLinea": "307", "ramal": "A", "estimadoArribo": 7,  "dniChofer": "30333444" },
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 14, "dniChofer": "30111222" },
     { "nroLinea": "214", "ramal": "D", "estimadoArribo": 10, "dniChofer": "30777888" },
-    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 4,  "dniChofer": "30888111" }
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 17, "dniChofer": "30555666" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 4,  "dniChofer": "30888111" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 11, "dniChofer": "30999000" }
   ],
   "0004": [
-    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 9,  "dniChofer": "30333444" }
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 9,  "dniChofer": "30333444" },
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 16, "dniChofer": "30111222" }
   ],
   "0005": [
     { "nroLinea": "214", "ramal": "D", "estimadoArribo": 2,  "dniChofer": "30777888" },
-    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 15, "dniChofer": "30999000" }
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 9,  "dniChofer": "30555666" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 15, "dniChofer": "30999000" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 22, "dniChofer": "30888111" }
   ],
   "0006": [
     { "nroLinea": "307", "ramal": "A", "estimadoArribo": 4,  "dniChofer": "30111222" },
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 11, "dniChofer": "30333444" },
     { "nroLinea": "214", "ramal": "D", "estimadoArribo": 9,  "dniChofer": "30555666" },
-    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 6,  "dniChofer": "30999000" }
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 16, "dniChofer": "30777888" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 6,  "dniChofer": "30999000" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 13, "dniChofer": "30888111" }
   ],
   "0007": [
     { "nroLinea": "307", "ramal": "A", "estimadoArribo": 7,  "dniChofer": "30333444" },
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 14, "dniChofer": "30111222" },
     { "nroLinea": "214", "ramal": "D", "estimadoArribo": 5,  "dniChofer": "30777888" },
-    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 12, "dniChofer": "30888111" }
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 12, "dniChofer": "30555666" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 12, "dniChofer": "30888111" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 19, "dniChofer": "30999000" }
   ],
   "0008": [
     { "nroLinea": "307", "ramal": "A", "estimadoArribo": 3,  "dniChofer": "30111222" },
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 10, "dniChofer": "30333444" },
     { "nroLinea": "214", "ramal": "D", "estimadoArribo": 8,  "dniChofer": "30555666" },
-    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 10, "dniChofer": "30999000" }
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 15, "dniChofer": "30777888" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 10, "dniChofer": "30999000" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 17, "dniChofer": "30888111" }
   ],
   "0009": [
     { "nroLinea": "307", "ramal": "A", "estimadoArribo": 6,  "dniChofer": "30333444" },
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 13, "dniChofer": "30111222" },
     { "nroLinea": "214", "ramal": "D", "estimadoArribo": 4,  "dniChofer": "30777888" },
-    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 11, "dniChofer": "30888111" }
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 11, "dniChofer": "30555666" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 11, "dniChofer": "30888111" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 18, "dniChofer": "30999000" }
+  ],
+  "0010": [
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 2,  "dniChofer": "30111222" },
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 11, "dniChofer": "30333444" },
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 6,  "dniChofer": "30555666" },
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 13, "dniChofer": "30777888" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 9,  "dniChofer": "30999000" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 16, "dniChofer": "30888111" }
   ]
 }

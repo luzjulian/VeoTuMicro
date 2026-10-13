@@ -92,6 +92,7 @@ const PARADAS = [
   { nroParada: '0007', latitud: -34.9226011, longitud: -57.9533442  }, // C. 54 904, La Plata
   { nroParada: '0008', latitud: -34.9209259, longitud: -57.9468235  }, // Diag. 73 1433, La Plata
   { nroParada: '0009', latitud: -34.9052731, longitud: -57.9252338  }, // Av. del Petróleo Argentino y 124, Berisso (facultad)
+  { nroParada: '0010', latitud: -34.755688,  longitud: -58.274952   }, // otra dire de prueba
 ];
 
 // Choferes — los DNI deben coincidir con proximosArribos.json y ser únicos en Persona

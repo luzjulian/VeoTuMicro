@@ -26,6 +26,7 @@ const iniciarViajeSchema = z.object({
 // POST /api/viajes/:nroViaje/confirmar → Conductor confirma viaje
 // POST /api/viajes/:nroViaje/rechazar  → Conductor rechaza viaje
 // POST /api/viajes/:nroViaje/abordo    → Pasajero confirma ascenso
+// POST /api/viajes/:nroViaje/cancelar  → Pasajero cancela la solicitud
 const nroViajeParamSchema = z.object({
   nroViaje: z
     .string({ required_error: 'El número de viaje es requerido' })

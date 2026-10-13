@@ -84,5 +84,16 @@ export function createViajesApi(devUser) {
      */
     confirmarDescenso: (nroViaje) =>
       fetchJson(`${BASE}/${nroViaje}/descenso`, { method: 'POST' }),
+
+    /**
+     * POST /api/viajes/:nroViaje/cancelar
+     * El pasajero cancela su solicitud → el conductor libera el cupo.
+     * Solo válido desde PENDIENTE o CONFIRMADO.
+     * Idempotente en el backend: reintentar no reemite el evento.
+     * @param {number} nroViaje ID autoincremental del viaje
+     * @returns {Promise<{ estado: 'CANCELADO', notificado: boolean }>}
+     */
+    cancelarViaje: (nroViaje) =>
+      fetchJson(`${BASE}/${nroViaje}/cancelar`, { method: 'POST' }),
   };
 }

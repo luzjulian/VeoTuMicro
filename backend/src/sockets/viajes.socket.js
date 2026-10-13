@@ -5,15 +5,19 @@
 //   - Asignación de rooms según el rol del usuario
 //
 // Rooms utilizadas:
-//   conductor:{nombreUsuario}  →  recibe 'nueva:solicitud', 'pasajero:abordo'
+//   conductor:{nombreUsuario}  →  recibe 'nueva:solicitud', 'pasajero:abordo',
+//                                 'solicitud:cancelada'
 //   pasajero:{nombreUsuario}   →  recibe 'viaje:confirmado', 'viaje:cancelado'
 //   admins                     →  recibe 'kpis_actualizados', 'solicitud:nueva'
 //
 // Eventos que el SERVER emite (desde los services):
-//   nueva:solicitud   → { nroViaje, parada, destino }
-//   viaje:confirmado  → { nroViaje, estimadoArribo }
-//   viaje:cancelado   → { nroViaje, mensaje }
-//   pasajero:abordo   → { nroViaje }
+//   nueva:solicitud     → { nroViaje, parada, destino }
+//   viaje:confirmado    → { nroViaje, estimadoArribo }
+//   viaje:cancelado     → { nroViaje, mensaje }
+//                         Al PASAJERO: su viaje se cayó por falta de conductores.
+//   solicitud:cancelada → { nroViaje, parada, destino, pasajero, mensaje }
+//                         Al CONDUCTOR: el pasajero canceló; liberar el cupo.
+//   pasajero:abordo     → { nroViaje }
 
 const cookie         = require('cookie');
 const { verifyAccessToken } = require('../lib/tokens');

@@ -169,6 +169,28 @@ const confirmarDescenso = async (req, res, next) => {
   }
 };
 
+/**
+ * POST /api/viajes/:nroViaje/cancelar
+ * Rol requerido: pasajero
+ *
+ * Respuesta 200:
+ *   { estado: 'CANCELADO', notificado: boolean }
+ *   + Socket event 'solicitud:cancelada' al conductor (solo la primera vez)
+ */
+const cancelarViaje = async (req, res, next) => {
+  try {
+    const resultado = await viajesService.cancelarViaje({
+      cuentaOid: getCuentaOid(req),
+      nroViaje:  getNroViaje(req),
+      io:        getIo(req),
+    });
+
+    res.status(200).json(resultado);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   iniciarViaje,
   confirmarViaje,
@@ -176,4 +198,5 @@ module.exports = {
   confirmarAscenso,
   notificarProximidad,
   confirmarDescenso,
+  cancelarViaje,
 };

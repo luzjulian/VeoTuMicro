@@ -10,6 +10,17 @@ const {
 } = require('../lib/http-errors');
 
 // ---------------------------------------------------------------------------
+// Constantes de dominio
+// ---------------------------------------------------------------------------
+
+/**
+ * Estados desde los que el pasajero todavía puede cancelar su solicitud.
+ * Una vez ABORDO el viaje está en curso y lo cierra el conductor con el
+ * descenso; FINALIZADO y CANCELADO son terminales.
+ */
+const ESTADOS_CANCELABLES = ['PENDIENTE', 'CONFIRMADO'];
+
+// ---------------------------------------------------------------------------
 // Helpers internos
 // ---------------------------------------------------------------------------
 
@@ -455,6 +466,73 @@ const confirmarDescenso = async ({ cuentaOid, nroViaje, io }) => {
   return { estado: 'FINALIZADO' };
 };
 
+/**
+ * UC7 – Cancelar Viaje (Actor: Pasajero)
+ *
+ * El pasajero se arrepiente antes de subir al colectivo.
+ * 1. Verifica que el viaje existe (404).
+ * 2. Valida que el pasajero autenticado es el dueño del viaje (403).
+ *    Se chequea ANTES que el estado para no filtrar información de un
+ *    viaje ajeno en el mensaje de error.
+ * 3. Transiciona a CANCELADO de forma atómica (ver nota abajo).
+ * 4. Notifica al conductor para que libere el cupo.
+ *
+ * Es idempotente: si el viaje ya estaba CANCELADO devuelve 200 con
+ * notificado=false y no vuelve a emitir el evento.
+ */
+const cancelarViaje = async ({ cuentaOid, nroViaje, io }) => {
+  const viaje = await buscarViaje(nroViaje);
+
+  // La pertenencia del viaje no cambia en el tiempo, así que validarla sobre
+  // la lectura previa es seguro (a diferencia del estado, ver abajo).
+  const cuentaPasajero = viaje.pasajero.persona.cuenta;
+  if (!cuentaPasajero || cuentaPasajero.oid !== cuentaOid) {
+    throw new ForbiddenError('No tenés permiso para cancelar este viaje');
+  }
+
+  // Transición atómica: el estado viaja en el WHERE para que la BD arbitre la
+  // carrera contra un conductor confirmando/rechazando en paralelo. Un
+  // read-check-write en tres pasos dejaría una ventana para el lost update.
+  // count === 1 ⇒ ganamos la transición y somos los únicos que notificamos.
+  const { count } = await prisma.viaje.updateMany({
+    where: { oid: nroViaje, estado: { in: ESTADOS_CANCELABLES } },
+    data:  { estado: 'CANCELADO', fechaHoraFin: new Date() },
+  });
+
+  if (count === 0) {
+    // O ya no era cancelable, o perdimos la carrera: releemos para distinguir
+    // una cancelación repetida (idempotente) de un estado inválido (400).
+    const actual = await prisma.viaje.findUnique({
+      where:  { oid: nroViaje },
+      select: { estado: true },
+    });
+
+    if (actual?.estado === 'CANCELADO') {
+      return { estado: 'CANCELADO', notificado: false };
+    }
+
+    throw new BadRequestError(
+      `El viaje no puede cancelarse: estado actual es ${actual?.estado}`
+    );
+  }
+
+  // Notificar al conductor para que saque la solicitud de su bandeja
+  const conductorUsername = viaje.conduce.chofer.persona.cuenta?.nombreUsuario;
+  let notificado = false;
+  if (conductorUsername) {
+    io.to(`conductor:${conductorUsername}`).emit('solicitud:cancelada', {
+      nroViaje,
+      parada:   viaje.parada.nroParada,
+      destino:  viaje.destino,
+      pasajero: viaje.pasajero.persona?.nombreApellido ?? 'Pasajero',
+      mensaje:  'El pasajero canceló la solicitud',
+    });
+    notificado = true;
+  }
+
+  return { estado: 'CANCELADO', notificado };
+};
+
 module.exports = {
   iniciarViaje,
   confirmarViaje,
@@ -462,4 +540,5 @@ module.exports = {
   confirmarAscenso,
   notificarProximidad,
   confirmarDescenso,
+  cancelarViaje,
 };

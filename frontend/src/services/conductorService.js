@@ -24,6 +24,7 @@ const socket = () => getSocket();
  *   solicitudes_iniciales → { solicitudes: [] }  (sin endpoint aún)
  *   nueva_solicitud       → { solicitud }
  *   pasajero_a_bordo      → { numeroSolicitud, paradaDestino, pasajero }
+ *   solicitud_cancelada   → { numeroSolicitud, pasajero }
  *
  * @param {(evento: string, payload: object) => void} onEvent
  * @returns {() => void} cleanup
@@ -74,13 +75,22 @@ export function suscribirsePanelConductor(onEvent) {
     });
   };
 
-  s.on('nueva:solicitud',  handleNuevaSolicitud);
-  s.on('pasajero:abordo',  handlePasajeroAbordo);
+  const handleSolicitudCancelada = ({ nroViaje, pasajero }) => {
+    onEvent('solicitud_cancelada', {
+      numeroSolicitud: nroViaje,
+      pasajero:        pasajero ?? 'El pasajero',
+    });
+  };
+
+  s.on('nueva:solicitud',     handleNuevaSolicitud);
+  s.on('pasajero:abordo',     handlePasajeroAbordo);
+  s.on('solicitud:cancelada', handleSolicitudCancelada);
 
   return () => {
     clearTimeout(t);
-    s.off('nueva:solicitud',  handleNuevaSolicitud);
-    s.off('pasajero:abordo',  handlePasajeroAbordo);
+    s.off('nueva:solicitud',     handleNuevaSolicitud);
+    s.off('pasajero:abordo',     handlePasajeroAbordo);
+    s.off('solicitud:cancelada', handleSolicitudCancelada);
   };
 }
 

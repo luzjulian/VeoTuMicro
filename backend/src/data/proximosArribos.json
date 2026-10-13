@@ -40,5 +40,11 @@
     { "nroLinea": "307", "ramal": "A", "estimadoArribo": 6,  "dniChofer": "30333444" },
     { "nroLinea": "214", "ramal": "D", "estimadoArribo": 4,  "dniChofer": "30777888" },
     { "nroLinea": "202", "ramal": "B", "estimadoArribo": 11, "dniChofer": "30888111" }
+  ],
+  "0010": [
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 2,  "dniChofer": "30111222" },
+    { "nroLinea": "307", "ramal": "A", "estimadoArribo": 11, "dniChofer": "30333444" },
+    { "nroLinea": "214", "ramal": "D", "estimadoArribo": 6,  "dniChofer": "30555666" },
+    { "nroLinea": "202", "ramal": "B", "estimadoArribo": 9,  "dniChofer": "30999000" }
   ]
 }

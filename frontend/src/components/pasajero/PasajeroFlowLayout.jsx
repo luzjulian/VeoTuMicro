@@ -1,5 +1,5 @@
 // src/components/pasajero/PasajeroFlowLayout.jsx
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
 
@@ -16,13 +16,24 @@ const ESTADO_INICIAL = {
 export function PasajeroFlowLayout() {
   const [viaje, setViaje] = useState(ESTADO_INICIAL);
 
-  const actualizarViaje = (cambios) => setViaje((prev) => ({ ...prev, ...cambios }));
-  const resetViaje = () => setViaje(ESTADO_INICIAL);
+  // Identidad estable: las páginas hijas usan estos callbacks como dependencias
+  // de sus propios useCallback/useEffect (ver EsperaPage), así que recrearlos en
+  // cada render invalidaría esas memoizaciones aguas abajo.
+  const actualizarViaje = useCallback(
+    (cambios) => setViaje((prev) => ({ ...prev, ...cambios })),
+    []
+  );
+  const resetViaje = useCallback(() => setViaje(ESTADO_INICIAL), []);
+
+  const contexto = useMemo(
+    () => ({ viaje, actualizarViaje, resetViaje }),
+    [viaje, actualizarViaje, resetViaje]
+  );
 
   return (
     <div className="min-h-dvh bg-fondo-principal flex flex-col">
       <div className="flex-1 max-w-md w-full mx-auto flex flex-col">
-        <Outlet context={{ viaje, actualizarViaje, resetViaje }} />
+        <Outlet context={contexto} />
       </div>
       <BottomNav bloqueado={viaje.estadoViaje === "a_bordo"} />
     </div>

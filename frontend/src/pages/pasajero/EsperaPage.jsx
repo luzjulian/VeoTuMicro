@@ -1,5 +1,5 @@
 // src/pages/pasajero/EsperaPage.jsx
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 // 🔁 Swap: mock → servicio real (misma interfaz)
 import {
@@ -19,17 +19,50 @@ export default function EsperaPage() {
   const [conductorConfirmo, setConductorConfirmo] = useState(false);
   const [colectivoLlego, setColectivoLlego] = useState(false);
 
-  const unsubscribeRef = useRef(null);
+  const [cancelando, setCancelando] = useState(false);
+  const [errorCancelacion, setErrorCancelacion] = useState(null);
 
-  const handleCancelar = () => {
+  const unsubscribeRef = useRef(null);
+  // Guard de doble envío en ref y no en estado: así handleCancelar no depende
+  // de `cancelando` y mantiene identidad estable entre renders.
+  const cancelandoRef = useRef(false);
+  // El anuncio de error necesita `anunciar`, que devuelve el hook al que le
+  // pasamos handleCancelar. Un ref rompe ese ciclo sin desestabilizar deps.
+  const anunciarRef = useRef(null);
+
+  const handleCancelar = useCallback(async () => {
+    if (cancelandoRef.current) return;
+    cancelandoRef.current = true;
+    setCancelando(true);
+    setErrorCancelacion(null);
+
+    try {
+      await notificarCancelacionAlConductorMock(viaje.numeroSolicitud);
+    } catch (err) {
+      // No navegamos: el viaje sigue vivo en el backend y el conductor puede
+      // estar yendo a buscar al pasajero. Sacarlo de la espera acá dejaría un
+      // viaje fantasma. Lo dejamos reintentar con el estado intacto.
+      console.warn("[EsperaPage] cancelarViaje falló:", err.message);
+      cancelandoRef.current = false;
+      setCancelando(false);
+      setErrorCancelacion("No pudimos cancelar tu viaje. Probá de nuevo.");
+      anunciarRef.current?.(
+        "No pudimos cancelar tu viaje. Tocá Cancelar solicitud para reintentar."
+      );
+      return;
+    }
+
     unsubscribeRef.current?.();
-    notificarCancelacionAlConductorMock(viaje.numeroSolicitud);
     resetViaje();
     navigate("/pasajero/linea");
-  };
+  }, [viaje.numeroSolicitud, resetViaje, navigate]);
 
   const { isListening, anunciar, preguntarSiNo, iniciarEscuchaConstante, cancelarPorTap, vaciarCola } =
     useEsperaVoiceFlow({ onCancelar: handleCancelar });
+
+  useEffect(() => {
+    anunciarRef.current = anunciar;
+  }, [anunciar]);
 
   const preguntarAbordaje = () => {
     preguntarSiNo("¿Has podido abordar? Decí sí o no", {
@@ -154,12 +187,22 @@ export default function EsperaPage() {
             Ya subí al colectivo
           </button>
         )}
+        {errorCancelacion && (
+          <p
+            role="alert"
+            className="text-sm text-estado-error bg-estado-error/10 border border-estado-error/40 rounded-lg p-3 text-center"
+          >
+            {errorCancelacion}
+          </p>
+        )}
         <button
           type="button"
           onClick={cancelarPorTap}
-          className="w-full bg-estado-error/10 border border-estado-error/40 text-estado-error font-bold text-lg h-14 rounded-md"
+          disabled={cancelando}
+          aria-busy={cancelando}
+          className="w-full bg-estado-error/10 border border-estado-error/40 text-estado-error font-bold text-lg h-14 rounded-md disabled:opacity-50"
         >
-          Cancelar solicitud
+          {cancelando ? "Cancelando…" : "Cancelar solicitud"}
         </button>
       </div>
     </div>

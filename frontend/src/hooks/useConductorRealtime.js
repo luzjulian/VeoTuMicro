@@ -97,6 +97,16 @@ export function useConductorRealtime() {
         );
       }
 
+      if (evento === "solicitud_cancelada") {
+        // El pasajero se bajó del flujo: sacamos la solicitud de la bandeja.
+        // Puede estar 'pendiente' o ya 'aceptada' — en el segundo caso es
+        // cuando más importa el aviso, porque el conductor la estaba esperando.
+        setSolicitudes((prev) =>
+          prev.filter((s) => s.numeroSolicitud !== payload.numeroSolicitud)
+        );
+        encolar(`${payload.pasajero} canceló la solicitud`);
+      }
+
       if (evento === "pasajero_a_bordo") {
         // Mezclar el payload con la solicitud almacenada en estado para que
         // el recordatorio tenga todos los datos (nombre, destino real, etc.)

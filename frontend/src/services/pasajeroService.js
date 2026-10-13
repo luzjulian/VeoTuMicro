@@ -129,12 +129,19 @@ export function reiniciarCicloArribo(nroViaje, onEvent) {
 }
 
 /**
- * Notifica al conductor que el pasajero canceló (no implementado aún en backend).
+ * Cancela el viaje en el backend. El conductor se entera en tiempo real vía
+ * socket 'solicitud:cancelada' (ver conductorService → suscribirsePanelConductor).
  * Reemplaza notificarCancelacionAlConductorMock.
+ *
+ * A diferencia del resto de las acciones de este servicio, propaga el error en
+ * lugar de tragárselo: quien llama necesita saber si la cancelación realmente
+ * ocurrió para no sacar al pasajero de la espera con el viaje todavía vivo.
+ *
+ * @param {number} nroViaje
+ * @returns {Promise<{ estado: 'CANCELADO', notificado: boolean }>}
  */
-export function notificarCancelacionAlConductor(nroViaje) {
-  // TODO: cuando haya endpoint de cancelación, llamar a la API aquí
-  console.info(`[pasajeroService] Cancelación local del viaje ${nroViaje}`);
+export async function notificarCancelacionAlConductor(nroViaje) {
+  return api.cancelarViaje(nroViaje);
 }
 
 /**

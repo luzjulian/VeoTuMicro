@@ -66,4 +66,12 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = { login, register, refresh, logout };
+const me = async (req, res, next) => {
+  try {
+    res.status(200).json(await authService.obtenerSesion(req.usuario.sub));
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { login, register, refresh, logout, me };

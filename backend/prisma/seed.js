@@ -98,7 +98,8 @@ const PARADAS = [
 const CHOFERES_DATA = [
   {
     dni: '30111222',
-    nombreApellido: 'Carlos Rodríguez',
+    nombre: 'Carlos',
+    apellido: 'Rodríguez',
     fechaNacimiento: new Date('1985-03-15'),
     nroLicenciaConducir: 'LC-001-ARG',
     nombreUsuario: 'chofer.carlos',
@@ -108,7 +109,8 @@ const CHOFERES_DATA = [
   },
   {
     dni: '30333444',
-    nombreApellido: 'Mario Fernández',
+    nombre: 'Mario',
+    apellido: 'Fernández',
     fechaNacimiento: new Date('1979-07-22'),
     nroLicenciaConducir: 'LC-002-ARG',
     nombreUsuario: 'chofer.mario',
@@ -118,7 +120,8 @@ const CHOFERES_DATA = [
   },
   {
     dni: '30555666',
-    nombreApellido: 'Lucas Gómez',
+    nombre: 'Lucas',
+    apellido: 'Gómez',
     fechaNacimiento: new Date('1990-11-30'),
     nroLicenciaConducir: 'LC-003-ARG',
     nombreUsuario: 'chofer.lucas',
@@ -128,7 +131,8 @@ const CHOFERES_DATA = [
   },
   {
     dni: '30777888',
-    nombreApellido: 'Pedro Martínez',
+    nombre: 'Pedro',
+    apellido: 'Martínez',
     fechaNacimiento: new Date('1982-06-10'),
     nroLicenciaConducir: 'LC-004-ARG',
     nombreUsuario: 'chofer.pedro',
@@ -138,7 +142,8 @@ const CHOFERES_DATA = [
   },
   {
     dni: '30999000',
-    nombreApellido: 'Jorge López',
+    nombre: 'Jorge',
+    apellido: 'López',
     fechaNacimiento: new Date('1975-01-05'),
     nroLicenciaConducir: 'LC-005-ARG',
     nombreUsuario: 'chofer.jorge',
@@ -148,7 +153,8 @@ const CHOFERES_DATA = [
   },
   {
     dni: '30888111',
-    nombreApellido: 'Roberto Díaz',
+    nombre: 'Roberto',
+    apellido: 'Díaz',
     fechaNacimiento: new Date('1988-09-14'),
     nroLicenciaConducir: 'LC-006-ARG',
     nombreUsuario: 'chofer.roberto',
@@ -160,7 +166,8 @@ const CHOFERES_DATA = [
 
 const ADMIN_DATA = {
   dni: '20111222',
-  nombreApellido: 'Administrativa Principal',
+  nombre: 'Administrativa',
+  apellido: 'Principal',
   fechaNacimiento: new Date('1980-04-20'),
   legajo: 'ADM-001',
   nombreUsuario: 'admin.jefe',
@@ -171,7 +178,8 @@ const ADMIN_DATA = {
 const PASAJEROS_DATA = [
   {
     dni: '25111222',
-    nombreApellido: 'Ana García',
+    nombre: 'Ana',
+    apellido: 'García',
     fechaNacimiento: new Date('1995-08-12'),
     certificadoDiscapacidad: 'CERT-VIS-001',
     nombreUsuario: 'pasajero.ana',
@@ -180,7 +188,8 @@ const PASAJEROS_DATA = [
   },
   {
     dni: '25333444',
-    nombreApellido: 'María Pérez',
+    nombre: 'María',
+    apellido: 'Pérez',
     fechaNacimiento: new Date('2000-02-28'),
     certificadoDiscapacidad: 'CERT-VIS-002',
     nombreUsuario: 'pasajero.maria',
@@ -228,7 +237,8 @@ async function main() {
   const personaAdmin = await prisma.persona.create({
     data: {
       dni:             ADMIN_DATA.dni,
-      nombreApellido:  ADMIN_DATA.nombreApellido,
+      nombre:          ADMIN_DATA.nombre,
+      apellido:        ADMIN_DATA.apellido,
       fechaNacimiento: ADMIN_DATA.fechaNacimiento,
       email:           ADMIN_DATA.email,
     },
@@ -244,7 +254,7 @@ async function main() {
       personaOid:   personaAdmin.oid,
     },
   });
-  console.log(`   ${ADMIN_DATA.nombreApellido} → usuario: ${ADMIN_DATA.nombreUsuario} / pass: ${ADMIN_DATA.password}`);
+  console.log(`   ${ADMIN_DATA.nombre} ${ADMIN_DATA.apellido} → usuario: ${ADMIN_DATA.nombreUsuario} / pass: ${ADMIN_DATA.password}`);
 
   // 5. Pasajeros
   console.log('\n🧑 Creando pasajeros...');
@@ -252,7 +262,8 @@ async function main() {
     const persona = await prisma.persona.create({
       data: {
         dni:             p.dni,
-        nombreApellido:  p.nombreApellido,
+        nombre:          p.nombre,
+        apellido:        p.apellido,
         fechaNacimiento: p.fechaNacimiento,
         email:           p.email,
       },
@@ -272,7 +283,7 @@ async function main() {
         personaOid:   persona.oid,
       },
     });
-    console.log(`   ${p.nombreApellido} → usuario: ${p.nombreUsuario} / pass: ${p.password}`);
+    console.log(`   ${p.nombre} ${p.apellido} → usuario: ${p.nombreUsuario} / pass: ${p.password}`);
   }
 
   // 6. Choferes + Conduce activos
@@ -283,7 +294,8 @@ async function main() {
     const persona = await prisma.persona.create({
       data: {
         dni:             c.dni,
-        nombreApellido:  c.nombreApellido,
+        nombre:          c.nombre,
+        apellido:        c.apellido,
         fechaNacimiento: c.fechaNacimiento,
         email:           c.email,
       },
@@ -314,7 +326,7 @@ async function main() {
     });
 
     console.log(
-      `   ${c.nombreApellido} (DNI: ${c.dni}) → Línea ${lineas[c.lineaIdx].nroLinea}-${lineas[c.lineaIdx].ramal} | usuario: ${c.nombreUsuario} | conduceOid: ${conduce.oid}`
+      `   ${c.nombre} ${c.apellido} (DNI: ${c.dni}) → Línea ${lineas[c.lineaIdx].nroLinea}-${lineas[c.lineaIdx].ramal} | usuario: ${c.nombreUsuario} | conduceOid: ${conduce.oid}`
     );
   }
 
@@ -322,27 +334,26 @@ async function main() {
   console.log('\n📄 Creando solicitudes de registro de ejemplo...');
   const HACE = (min) => new Date(Date.now() - min * 60 * 1000);
   const SOLICITUDES_DATA = [
-    { nombre: 'Marina', apellido: 'García', nombreApellido: 'Marina García',  dni: '34901567', email: 'marina@veotumicro.test', estado: 'PENDIENTE', createdAt: HACE(120) },
-    { nombre: 'Diego', apellido: 'Romero', nombreApellido: 'Diego Romero',   dni: null,       email: 'diego@veotumicro.test',  estado: 'PENDIENTE', createdAt: HACE(45) },
-    { nombre: 'Andrés', apellido: 'Pérez', nombreApellido: 'Andrés Pérez',   dni: '34612445', email: 'andres@veotumicro.test', estado: 'RECHAZADA', createdAt: HACE(60 * 48) },
+    { nombre: 'Marina', apellido: 'García', dni: '34901567', email: 'marina@veotumicro.test', estado: 'PENDIENTE', createdAt: HACE(120) },
+    { nombre: 'Diego', apellido: 'Romero', dni: null,       email: 'diego@veotumicro.test',  estado: 'PENDIENTE', createdAt: HACE(45) },
+    { nombre: 'Andrés', apellido: 'Pérez', dni: '34612445', email: 'andres@veotumicro.test', estado: 'RECHAZADA', createdAt: HACE(60 * 48) },
   ];
   for (const sol of SOLICITUDES_DATA) {
     await prisma.solicitudRegistro.create({
       data: {
-        nombreApellido:    sol.nombreApellido,
         nombre:            sol.nombre,
         apellido:          sol.apellido,
         dni:               sol.dni,
         email:             sol.email,
         contraseniaHash:   hashPwd('pasajero1234'),
-        certificadoKey:    guardarPdfDeEjemplo(`Certificado de ejemplo - ${sol.nombreApellido}`),
+        certificadoKey:    guardarPdfDeEjemplo(`Certificado de ejemplo - ${sol.nombre} ${sol.apellido}`),
         certificadoNombre: 'certificado.pdf',
         estado:            sol.estado,
         createdAt:         sol.createdAt,
         ...(sol.estado === 'RECHAZADA' ? { resueltaAt: HACE(60 * 47), adminOid: adminRol.oid } : {}),
       },
     });
-    console.log(`   ${sol.nombreApellido} → ${sol.estado} (${sol.email})`);
+    console.log(`   ${sol.nombre} ${sol.apellido} → ${sol.estado} (${sol.email})`);
   }
 
   console.log('\n✅ Seed completado con éxito!');

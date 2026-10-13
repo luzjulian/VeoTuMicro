@@ -12,6 +12,7 @@ const storage = require('../lib/storage');
 const { hashPassword } = require('../lib/password');
 const { ConflictError, NotFoundError, ForbiddenError } = require('../lib/http-errors');
 const { FRONT_A_ESTADO, toSolicitudDTO } = require('../domain/solicitud');
+const { nombreCompleto } = require('../domain/persona');
 const mail = require('./mail.service');
 const { emitirKpis } = require('./kpis.service');
 
@@ -44,7 +45,7 @@ const obtenerAdministrativo = async (cuentaOid) => {
 
 /**
  * @param {object} p
- * @param {{nombre:string,email:string,password:string,dni?:string,fechaNacimiento?:string}} p.datos  ya validados por Zod
+ * @param {{nombre:string,apellido:string,email:string,password:string,dni?:string,fechaNacimiento?:string}} p.datos  ya validados por Zod
  * @param {import('multer').File} p.archivo  PDF ya guardado por multer
  * @param {import('socket.io').Server} [p.io]
  */
@@ -67,9 +68,8 @@ const crearSolicitud = async ({ datos, archivo, io }) => {
 
   const solicitud = await prisma.solicitudRegistro.create({
     data: {
-      nombreApellido:    apellido ? `${nombre} ${apellido}` : nombre,
-      nombre:            apellido ? nombre : null,
-      apellido:          apellido ?? null,
+      nombre,
+      apellido,
       dni:               dni ?? null,
       fechaNacimiento:   fechaNacimiento ? new Date(fechaNacimiento) : null,
       email,
@@ -130,7 +130,8 @@ const aceptar = async ({ oid, cuentaOid, io }) => {
       const persona = await tx.persona.create({
         data: {
           dni:             existente.dni,
-          nombreApellido:  existente.nombreApellido,
+          nombre:          existente.nombre,
+          apellido:        existente.apellido,
           fechaNacimiento: existente.fechaNacimiento,
           email:           existente.email,
         },
@@ -165,7 +166,7 @@ const aceptar = async ({ oid, cuentaOid, io }) => {
 
   const mailEnviado = await enviarMail(mail.enviarAprobacion, {
     email:  solicitud.email,
-    nombre: solicitud.nombreApellido,
+    nombre: nombreCompleto(solicitud),
   });
 
   emitirKpis(io);
@@ -195,7 +196,7 @@ const rechazar = async ({ oid, cuentaOid, io }) => {
 
   const mailEnviado = await enviarMail(mail.enviarRechazo, {
     email:  solicitud.email,
-    nombre: solicitud.nombreApellido,
+    nombre: nombreCompleto(solicitud),
   });
 
   emitirKpis(io);

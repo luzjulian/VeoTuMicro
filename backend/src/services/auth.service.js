@@ -95,4 +95,23 @@ const logout = async (rawRefreshToken) => {
   });
 };
 
-module.exports = { login, refresh, logout };
+// Datos de la sesión actual, para que el front recupere quién está logueado al recargar la página.
+// El rol se vuelve a consultar en la base (no se confía solo en el token).
+const obtenerSesion = async (cuentaOid) => {
+  const cuenta = await prisma.cuenta.findUnique({
+    where:   { oid: Number(cuentaOid) },
+    include: { persona: true },
+  });
+  if (!cuenta) throw new UnauthorizedError('La sesión ya no es válida');
+
+  const rol = await resolverRol(cuenta.personaOid);
+
+  return {
+    nombreUsuario: cuenta.nombreUsuario,
+    rol,
+    nombre:   cuenta.persona.nombre,
+    apellido: cuenta.persona.apellido,
+  };
+};
+
+module.exports = { login, refresh, logout, obtenerSesion };

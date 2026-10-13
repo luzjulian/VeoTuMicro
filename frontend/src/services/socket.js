@@ -1,69 +1,51 @@
 // src/services/socket.js
 //
-// Fábrica de sockets Socket.io por rol.
+// Socket.io del cliente: una única instancia por sesión.
 // Autentica con la cookie del access token, que viaja en el handshake porque
-// el socket vive bajo /api. El devUser es un fallback temporal de desarrollo
-// que se elimina junto con dev-auth.
-//
-// Cada rol tiene su propia instancia para que pasajero y chofer
-// puedan coexistir en la misma ventana durante pruebas locales.
+// el socket vive bajo /api (ver backend/src/server.js). Un navegador tiene una
+// sola sesión, así que un solo socket alcanza.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { io } from 'socket.io-client';
 
-/** @type {Map<string, import('socket.io-client').Socket>} */
-const sockets = new Map();
+/** @type {import('socket.io-client').Socket | null} */
+let socket = null;
 
 /**
- * Devuelve (o crea) el socket para el rol del devUser dado.
- * @param {{ sub: string, nombreUsuario: string, rol: string }} devUser
+ * Devuelve (o crea) el socket de la sesión actual.
+ * No recibe parámetros: el backend identifica al usuario por la cookie.
  * @returns {import('socket.io-client').Socket}
  */
-export function getSocket(devUser) {
-  const key = devUser.rol;
-
-  if (!sockets.has(key)) {
-    const devUserJson = JSON.stringify(devUser);
-    const socket = io({
-      // Sin host → misma origin; el proxy de Vite reenvía /api al backend.
-      //El path tiene que coincidir con el del servidor ( ver backend/src/server.js)
-      // bajo /api para que el navegador adjute la cookie del access token.
-      path:'/api/socket.io',
-      // devUser va en AMBOS lugares:
-      //   auth  → CONNECT packet de Socket.io (ruta normal)
-      //   query → query string del handshake HTTP (fallback cuando Vite no
-      //           transporta correctamente el CONNECT packet por el proxy ws)
-      auth:  { devUser: devUserJson },
-      query: { devUser: devUserJson },
+export function getSocket() {
+  if (!socket) {
+    const s = io({
+      // Sin host → mismo origen; el proxy de Vite reenvía /api al backend.
+      // El path tiene que coincidir con el del servidor (ver backend/src/server.js):
+      // bajo /api para que el navegador adjunte la cookie del access token.
+      path: '/api/socket.io',
       reconnectionAttempts: 5,
       reconnectionDelay: 2000,
     });
 
-    socket.on('connect', () =>
-      console.log(`[Socket] ${devUser.nombreUsuario} conectado (id=${socket.id})`)
-    );
-    socket.on('connect_error', (err) =>
-      console.error(`[Socket] Error (${devUser.rol}): ${err.message}`)
-    );
-    socket.on('disconnect', (reason) =>
-      console.log(`[Socket] ${devUser.nombreUsuario} desconectado: ${reason}`)
-    );
+    s.on('connect',       ()       => console.log(`[Socket] conectado (id=${s.id})`));
+    s.on('connect_error', (err)    => console.error(`[Socket] Error: ${err.message}`));
+    s.on('disconnect',    (reason) => console.log(`[Socket] desconectado: ${reason}`));
 
-    sockets.set(key, socket);
+    socket = s;
   }
 
-  return sockets.get(key);
+  return socket;
 }
 
 /**
- * Desconecta el socket de un rol y lo elimina del pool.
- * Llamar al desmontar el componente raíz del rol.
- * @param {string} rol  'pasajero' | 'chofer'
+ * Cierra el socket de la sesión.
+ * Llamar al cerrar sesión, para que el próximo login abra una conexión nueva
+ * con la cookie del usuario que corresponde.
  */
-export function disconnectSocket(rol) {
-  if (sockets.has(rol)) {
-    sockets.get(rol).disconnect();
-    sockets.delete(rol);
-    console.log(`[Socket] Pool: socket '${rol}' eliminado`);
+export function disconnectSocket() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+    console.log('[Socket] cerrado');
   }
 }

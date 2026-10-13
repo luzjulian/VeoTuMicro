@@ -2,9 +2,7 @@
 
 const { Router }   = require('express');
 const ctrl         = require('../controllers/paradas.controller');
-// 🔧 DEV: usando dev-auth mientras el módulo de auth real está en construcción.
-// En producción cambiar a: const { requireAuth } = require('../middlewares/require-auth');
-const { requireAuth } = require('../middlewares/dev-auth');
+const { requireAuth } = require('../middlewares/require-auth');
 const { validate }    = require('../middlewares/validate');
 const { paradaCercanaSchema } = require('../domain/parada');
 
@@ -25,7 +23,6 @@ const router = Router();
  *     summary: Retorna la parada de ascenso más cercana a las coordenadas GPS del pasajero
  *     security:
  *       - cookieAuth: []
- *       - devAuth: []
  *     parameters:
  *       - in: query
  *         name: lat

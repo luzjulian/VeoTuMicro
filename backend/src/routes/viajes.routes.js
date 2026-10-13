@@ -2,10 +2,7 @@
 
 const { Router }               = require('express');
 const viajesController         = require('../controllers/viajes.controller');
-// 🔧 DEV: importando dev-auth mientras el módulo de auth está en construcción.
-// Cuando auth esté listo, cambiar esta línea por:
-// const { requireAuth, soloRol } = require('../middlewares/require-auth');
-const { requireAuth, soloRol } = require('../middlewares/dev-auth');
+const { requireAuth, soloRol } = require('../middlewares/require-auth');
 const { validate }                          = require('../middlewares/validate');
 const { iniciarViajeSchema, nroViajeParamSchema } = require('../domain/viaje');
 const { requireIdempotencyKey } = require('../middlewares/idempotency');
@@ -32,7 +29,6 @@ const router = Router();
  *     tags: [Viajes]
  *     security:
  *       - cookieAuth: []
- *       - devAuth: []
  *     parameters:
  *       - in: header
  *         name: Idempotency-Key
@@ -125,7 +121,6 @@ router.post(
  *     tags: [Viajes]
  *     security:
  *       - cookieAuth: []
- *       - devAuth: []
  *     parameters:
  *       - in: path
  *         name: nroViaje
@@ -175,7 +170,6 @@ router.post(
  *     tags: [Viajes]
  *     security:
  *       - cookieAuth: []
- *       - devAuth: []
  *     parameters:
  *       - in: path
  *         name: nroViaje
@@ -223,7 +217,6 @@ router.post(
  *     tags: [Viajes]
  *     security:
  *       - cookieAuth: []
- *       - devAuth: []
  *     parameters:
  *       - in: path
  *         name: nroViaje
@@ -269,7 +262,6 @@ router.post(
  *     tags: [Viajes]
  *     security:
  *       - cookieAuth: []
- *       - devAuth: []
  *     parameters:
  *       - in: path
  *         name: nroViaje
@@ -317,7 +309,6 @@ router.post(
  *     tags: [Viajes]
  *     security:
  *       - cookieAuth: []
- *       - devAuth: []
  *     parameters:
  *       - in: path
  *         name: nroViaje

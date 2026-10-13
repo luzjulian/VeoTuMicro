@@ -9,11 +9,10 @@
 
 import { getSocket }                from './socket.js';
 import { createViajesApi }         from './api/viajesApi.js';
-import { DEV_USERS }               from '@/config/devAuth.js';
 import { geocodificarCoordenadas } from '@/services/geocodingService.js';
 
-const api    = createViajesApi(DEV_USERS.chofer);
-const socket = () => getSocket(DEV_USERS.chofer);
+const api    = createViajesApi();
+const socket = () => getSocket();
 
 // ─────────────────────────────────────────────────────────────────────────────
 

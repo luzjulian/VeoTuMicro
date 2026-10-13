@@ -9,10 +9,9 @@
 
 import { getSocket }       from './socket.js';
 import { createViajesApi } from './api/viajesApi.js';
-import { DEV_USERS }       from '@/config/devAuth.js';
 
-const api    = createViajesApi(DEV_USERS.pasajero);
-const socket = () => getSocket(DEV_USERS.pasajero);
+const api    = createViajesApi();
+const socket = () => getSocket();
 
 // ── Countdown client-side (mismo que el mock pero con ETA real del backend) ──
 

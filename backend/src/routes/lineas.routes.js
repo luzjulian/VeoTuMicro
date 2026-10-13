@@ -2,9 +2,7 @@
 
 const { Router }   = require('express');
 const ctrl         = require('../controllers/lineas.controller');
-// 🔧 DEV: usando dev-auth mientras el módulo de auth real está en construcción.
-// En producción cambiar a: const { requireAuth } = require('../middlewares/require-auth');
-const { requireAuth } = require('../middlewares/dev-auth');
+const { requireAuth } = require('../middlewares/require-auth');
 const { validate }    = require('../middlewares/validate');
 const { disponibilidadSchema } = require('../domain/linea');
 
@@ -25,7 +23,6 @@ const router = Router();
  *     summary: Lista todas las líneas con al menos un chofer activo
  *     security:
  *       - cookieAuth: []
- *       - devAuth: []
  *     responses:
  *       200:
  *         description: Array de líneas activas
@@ -49,7 +46,6 @@ router.get('/activas', requireAuth, ctrl.listarLineasActivas);
  *     summary: Valida si una línea tiene arrivals en la parada detectada por GPS
  *     security:
  *       - cookieAuth: []
- *       - devAuth: []
  *     parameters:
  *       - in: query
  *         name: nroLinea

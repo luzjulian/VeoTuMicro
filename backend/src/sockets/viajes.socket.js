@@ -28,40 +28,17 @@ const initSocket = (io) => {
   // Middleware de autenticación — corre antes de que el socket se conecte
   // -------------------------------------------------------------------
   io.use((socket, next) => {
-    try {
-      // 1. Intentar autenticar con JWT desde la cookie (producción / auth real)
+    try {  
       const rawCookies = socket.handshake.headers.cookie ?? '';
       const cookies    = cookie.parse(rawCookies);
       const token      = cookies[ACCESS_COOKIE_NAME];
 
-      if (token) {
-        const payload = verifyAccessToken(token);
-        socket.usuario = payload; // { sub, nombreUsuario, rol }
-        return next();
+      if (!token) {
+        return next(new Error('AUTH_REQUIRED: Falta el token de autenticación'));
       }
 
-      // 2. DEV bypass: leer devUser del handshake.auth o de la query string.
-      //    El proxy Vite (ws:true) a veces no transporta el CONNECT packet auth,
-      //    por eso se acepta también ?devUser= en la URL del handshake HTTP.
-      //    ❌ NO usar en producción — el flag NODE_ENV lo bloquea.
-      if (process.env.NODE_ENV !== 'production') {
-        const raw = socket.handshake.auth?.devUser
-                 ?? socket.handshake.query?.devUser;
-        if (raw) {
-          try {
-            const payload = JSON.parse(raw);
-            if (payload.sub && payload.nombreUsuario && payload.rol) {
-              socket.usuario = payload;
-              console.warn(`⚠️  [Socket DEV] ${payload.nombreUsuario} conectado sin JWT`);
-              return next();
-            }
-          } catch {
-            return next(new Error('AUTH_INVALID: devUser no es JSON válido'));
-          }
-        }
-      }
-
-      return next(new Error('AUTH_REQUIRED: Falta el token de autenticación'));
+      socket.usuario = verifyAccessToken(token); // { sub, nombreUsuario, rol }
+      next();
     } catch {
       next(new Error('AUTH_INVALID: Token inválido o expirado'));
     }

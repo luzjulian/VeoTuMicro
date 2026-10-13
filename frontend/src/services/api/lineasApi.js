@@ -1,16 +1,7 @@
-// src/services/api/lineasApi.js
-
-import { DEV_USERS } from '@/config/devAuth';
-
-const devHeader = () => ({
-  'Content-Type': 'application/json',
-  'X-Dev-User': JSON.stringify(DEV_USERS.pasajero),
-});
 
 async function fetchJson(url) {
   const res = await fetch(url, {
-    headers: devHeader(),
-    credentials: 'include',
+    credentials: 'include', //manda la cookie de sesión
   });
   if (!res.ok) {
     const msg = await res.text().catch(() => res.statusText);

@@ -1,28 +1,17 @@
-// src/services/api/viajesApi.js
-//
 // Cliente HTTP para el módulo de viajes.
-// DEV: autentica con X-Dev-User header (mismo mecanismo que Postman).
-// PROD: las cookies JWT se envían automáticamente (credentials: 'include').
+// La sesión viaja en la cookie del access token (credentials: 'include'):
+// el backend resuelve quién es el usuario, el cliente no necesita saberlo.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Crea una instancia del API de viajes autenticada con el devUser indicado.
- * @param {{ sub: string, nombreUsuario: string, rol: string }} devUser
- */
+/** Crea una instancia del API de viajes para la sesión actual. */
 export function createViajesApi(devUser) {
   const BASE = '/api/viajes';
 
-  /** Cabecera de autenticación DEV */
-  const authHeaders = {
-    'Content-Type': 'application/json',
-    'X-Dev-User': JSON.stringify(devUser),
-  };
-
   async function fetchJson(url, options = {}) {
     const res = await fetch(url, {
-      credentials: 'include', // reenvía cookies en producción
+      credentials: 'include', // manda la cookie de sesion
       ...options,
-      headers: { ...authHeaders, ...(options.headers ?? {}) },
+      headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
     });
 
     const text = await res.text();

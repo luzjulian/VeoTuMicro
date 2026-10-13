@@ -6,8 +6,9 @@ const { listarQuerySchema, idParamSchema } = require('../domain/solicitud');
 
 const router = Router();
 
-// Todo el módulo es solo para administrativos, con sesión real (cookie).
-// No usa dev-auth: el <iframe> que muestra el PDF no puede mandar headers personalizados.
+// Todo el módulo es solo para administrativos.
+// La sesión viaja en la cookie: el <iframe> que muestra el PDF no puede mandar
+// headers personalizados, así que la autenticación por cookie es la única opción.
 router.use(requireAuth, soloRol('administrativo'));
 
 /**

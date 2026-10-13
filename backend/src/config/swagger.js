@@ -28,10 +28,10 @@ const options = {
         // multipart/form-data: los nombres de campo son los del formulario del front
         RegisterInput: {
           type: 'object',
-          required: ['nombre', 'email', 'password', 'certificado'],
+          required: ['nombre', 'apellido', 'email', 'password', 'certificado'],
           properties: {
-            nombre:          { type: 'string', example: 'Pepe', description: 'Nombre (si no se envía apellido, se toma como nombre completo)' },
-            apellido:        { type: 'string', example: 'Argento', description: 'Apellido (recomendado)' },
+            nombre:          { type: 'string', example: 'Pepe', description: 'Nombre' },
+            apellido:        { type: 'string', example: 'Argento', description: 'Apellido' },
             email:           { type: 'string', format: 'email', example: 'pepeargento@correo.com', description: 'Será el nombre de usuario' },
             password:        { type: 'string', format: 'password', minLength: 8, maxLength: 72, example: 'miPassword123' },
             confirmPassword: { type: 'string', format: 'password', description: 'Opcional; si se envía debe coincidir con password' },
@@ -46,6 +46,16 @@ const options = {
           properties: {
             message: { type: 'string', example: 'Solicitud enviada. Te avisaremos por mail cuando validemos tu certificado' },
             estado:  { type: 'string', example: 'pendiente' },
+          },
+        },
+
+        Sesion: {
+          type: 'object',
+          properties: {
+            nombreUsuario: { type: 'string', example: 'pepeargento@correo.com' },
+            rol:           { type: 'string', enum: ['pasajero', 'chofer', 'administrativo'] },
+            nombre:        { type: 'string', example: 'Pepe' },
+            apellido:      { type: 'string', example: 'Argento' },
           },
         },
 
@@ -77,7 +87,7 @@ const options = {
           properties: {
             id:                { type: 'integer', example: 12 },
             nombre:            { type: 'string', example: 'Pepe' },
-            apellido:          { type: 'string', example: 'Argento', description: 'Última palabra del nombre completo (solo para mostrar)' },
+            apellido:          { type: 'string', example: 'Argento', description: 'Apellido' },
             dni:               { type: 'string', nullable: true, example: '12345678' },
             fechaHoraRegistro: { type: 'string', format: 'date-time' },
             estado:            { type: 'string', enum: ['pendiente', 'aceptado', 'rechazado'] },

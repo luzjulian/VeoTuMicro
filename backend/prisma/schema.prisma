@@ -39,7 +39,8 @@ model RefreshToken {
 model Persona {
   oid             Int      @id @default(autoincrement())
   dni             String?  @unique
-  nombreApellido  String
+  nombre          String
+  apellido        String
   fechaNacimiento DateTime?
   email           String?  @unique
 
@@ -116,9 +117,8 @@ enum EstadoSolicitud {
 
 model SolicitudRegistro {
   oid               Int             @id @default(autoincrement())
-  nombreApellido    String          // nombre completo ("Nombre Apellido")
-  nombre            String?         // por separado, para mostrar bien "Apellido, Nombre" en el panel
-  apellido          String?
+  nombre            String
+  apellido          String
   dni               String?
   fechaNacimiento   DateTime?
   email             String          // también será el nombreUsuario de la Cuenta

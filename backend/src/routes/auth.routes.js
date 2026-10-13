@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const authController = require('../controllers/auth.controller');
+const { requireAuth }   = require('../middlewares/require-auth');
 const { validate }      = require('../middlewares/validate');
 const { authRateLimit } = require('../middlewares/rate-limit');
 const { subirCertificado, borrarArchivoSiFalla } = require('../middlewares/upload');
@@ -149,5 +150,32 @@ router.post('/refresh', authController.refresh);
  *         description: Sesión cerrada correctamente
  */
 router.post('/logout', authController.logout);
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Devuelve la sesión actual
+ *     description: >
+ *       Sirve para recordar la sesión: el front lo llama al cargar la página y, si hay una cookie
+ *       válida, recupera quién está logueado y con qué rol. Sin sesión responde 401.
+ *     tags: [Auth]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Sesión activa
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Sesion'
+ *       401:
+ *         description: No hay sesión o el access token venció
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get('/me', requireAuth, authController.me);
 
 module.exports = router;

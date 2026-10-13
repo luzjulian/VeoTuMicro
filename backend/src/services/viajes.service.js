@@ -1,6 +1,7 @@
 // backend/src/services/viajes.service.js
 
 const prisma = require('../config/prisma');
+const { nombreCompleto } = require('../domain/persona');
 const { getArribos } = require('../lib/arribosService');
 const {
   AppError,
@@ -120,7 +121,7 @@ const iniciarViaje = async ({ cuentaOid, idempotencyKey, nroParada, nroLinea, ra
     },
   });
 
-  const nombrePasajero = cuenta?.persona?.nombreApellido ?? 'Pasajero';
+  const nombrePasajero = (cuenta?.persona ? nombreCompleto(cuenta.persona) : '') || 'Pasajero';
 
   const pasajero = cuenta?.persona?.pasajero;
   if (!pasajero) {
@@ -360,7 +361,7 @@ const confirmarAscenso = async ({ cuentaOid, nroViaje, io }) => {
     io.to(`conductor:${conductorUsername}`).emit('pasajero:abordo', {
       nroViaje,
       destino:  viaje.destino,
-      pasajero: viaje.pasajero.persona?.nombreApellido ?? 'Pasajero',
+      pasajero: nombreCompleto(viaje.pasajero.persona) || 'Pasajero',
     });
   }
 

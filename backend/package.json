@@ -30,13 +30,23 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.4.0",
     "nodemailer": "^10.0.13",
+    "present": "^1.0.0",
+    "scripts": "^0.1.0",
     "socket.io": "^4.8.1",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14",
+    "nodemon": "^1.14.10",
     "prisma": "^6.12.0"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.12.0": true,
+    "@scarf/scarf@1.4.0": true,
+    "bcrypt@6.0.0": true,
+    "nodemon@1.19.4": true,
+    "prisma@6.12.0": true
   }
 }

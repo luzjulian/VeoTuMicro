@@ -13,6 +13,7 @@ const server = http.createServer(app);
 // Socket.io
 // ---------------------------------------------------------------------------
 const io = new Server(server, {
+  path: '/api/socket.io',
   cors: {
     origin:      env.CORS_ORIGIN,
     credentials: true,   // necesario para que las cookies lleguen en el handshake
@@ -31,5 +32,5 @@ initSocket(io);
 // ---------------------------------------------------------------------------
 server.listen(env.PORT, () => {
   console.log(`🚀 API    escuchando en http://localhost:${env.PORT} (${env.NODE_ENV})`);
-  console.log(`🔌 Socket escuchando en ws://localhost:${env.PORT}`);
+  console.log(`🔌 Socket escuchando en ws://localhost:${env.PORT}/api/socket.io`);
 });

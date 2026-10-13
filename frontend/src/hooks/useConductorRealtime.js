@@ -1,13 +1,12 @@
 // src/hooks/useConductorRealtime.js
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useVoiceQueue } from "@/hooks/useVoiceQueue";
-// 🔁 Swap: mock → servicio real (misma interfaz)
 import {
   suscribirsePanelConductor,
-  simularAbordajeMock,
-  notificarRechazoMock,
-  notificarProximidadMock,
-  confirmarDescensoMock,
+  confirmarViaje,
+  rechazarViaje,
+  notificarProximidad,
+  confirmarDescenso,
 } from "@/services/conductorService";
 
 // Cada cuánto se repite el recordatorio de bajada hasta que el conductor
@@ -21,8 +20,8 @@ const REPETICION_RECORDATORIO_MS = 3 * 60 * 1000; // 3 minutos
  * El conductor sólo interactúa por interfaz gráfica (nunca micrófono): este
  * hook usa SÓLO salida de voz (useVoiceQueue → TTS), nunca reconocimiento.
  *
- * Toda la comunicación pasa por mockConductorService, de modo que migrar a
- * Socket.io más adelante no toque este hook ni la UI.
+ * Toda la comunicación pasa por conductorService, que encapsula el backend REST
+ * y los eventos de Socket.io: este hook y la UI no saben de transporte.
  */
 export function useConductorRealtime() {
   const { encolar, vaciarCola } = useVoiceQueue();
@@ -74,7 +73,7 @@ export function useConductorRealtime() {
       // (sin GPS real todavía) → avisamos al pasajero vía backend, UNA sola
       // vez (la idempotencia del backend lo protege igual, pero no hace
       // falta llamarlo de nuevo en cada repetición del recordatorio).
-      notificarProximidadMock(solicitud.numeroSolicitud);
+      notificarProximidad(solicitud.numeroSolicitud);
 
       detenerRepeticion();
       programarRecordatorio(solicitud);
@@ -152,7 +151,7 @@ export function useConductorRealtime() {
         )
       );
 
-      abordajeTimersRef.current[numeroSolicitud] = simularAbordajeMock(
+      abordajeTimersRef.current[numeroSolicitud] = confirmarViaje(
         numeroSolicitud,
         { paradaDestino: solicitud.paradaDestino, pasajero: solicitud.pasajero },
         manejarEvento
@@ -165,7 +164,7 @@ export function useConductorRealtime() {
     (numeroSolicitud) => {
       vaciarCola();
       encolar("Solicitud rechazada");
-      notificarRechazoMock(numeroSolicitud);
+      rechazarViaje(numeroSolicitud);
       setSolicitudes((prev) =>
         prev.filter((s) => s.numeroSolicitud !== numeroSolicitud)
       );
@@ -187,7 +186,7 @@ export function useConductorRealtime() {
       );
       // El pasajero se entera en tiempo real vía socket 'descenso:confirmado'
       // (ver pasajeroService → suscribirseABordo, usado en ABordoPage).
-      confirmarDescensoMock(numeroSolicitud);
+      confirmarDescenso(numeroSolicitud);
     },
     [detenerRepeticion, vaciarCola]
   );

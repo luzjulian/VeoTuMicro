@@ -1,10 +1,7 @@
 // src/services/conductorService.js
 //
-// Reemplaza mockConductorService.js — misma interfaz, eventos reales de Socket.io.
-//
-// Swap de 1 línea en cada importador:
-//   ANTES: import { ... } from '@/services/mock/mockConductorService'
-//   AHORA: import { ... } from '@/services/conductorService'
+// Capa de acceso del Panel del Conductor: encapsula el backend REST (/api/viajes)
+// y los eventos de Socket.io. La UI y los hooks no saben de transporte.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { getSocket }                from './socket.js';
@@ -18,7 +15,6 @@ const socket = () => getSocket();
 
 /**
  * Suscribe el Panel del Conductor a los eventos de Socket.io.
- * Reemplaza suscribirsePanelConductor del mock — misma firma.
  *
  * Eventos emitidos al onEvent:
  *   solicitudes_iniciales → { solicitudes: [] }  (sin endpoint aún)
@@ -52,7 +48,6 @@ export function suscribirsePanelConductor(onEvent) {
       }
     }
 
-    /** @type {import('@/services/mock/mockConductorService').Solicitud} */
     const solicitud = {
       numeroSolicitud:  nroViaje,
       nroLinea:         '307',   // TODO: incluir en el evento del backend si se necesita
@@ -96,17 +91,17 @@ export function suscribirsePanelConductor(onEvent) {
 
 /**
  * El conductor acepta la solicitud → llama al backend (confirmar).
- * Reemplaza simularAbordajeMock — misma firma SÍNCRONA.
  *
- * La notificación real de abordaje llega luego vía socket 'pasajero:abordo'
- * (cuando el pasajero confirma que subió) y es manejada en suscribirsePanelConductor.
+ * Firma SÍNCRONA: dispara la llamada y no espera. La notificación real de
+ * abordaje llega luego vía socket 'pasajero:abordo' (cuando el pasajero
+ * confirma que subió) y es manejada en suscribirsePanelConductor.
  *
- * @param {string} nroViaje  UUID del viaje
+ * @param {number} nroViaje  ID autoincremental del viaje
  * @param {object} _datos    (ignorado — el evento real viene del socket)
  * @param {Function} _onEvent (ignorado — ya registrado en suscribirsePanelConductor)
  * @returns {() => void} cleanup noop
  */
-export function simularAbordajeMock(nroViaje, _datos, _onEvent) {
+export function confirmarViaje(nroViaje, _datos, _onEvent) {
   api.confirmarViaje(nroViaje).catch((err) =>
     console.error('[conductorService] Error al confirmar viaje:', err.message)
   );
@@ -115,11 +110,11 @@ export function simularAbordajeMock(nroViaje, _datos, _onEvent) {
 
 /**
  * El conductor rechaza la solicitud → llama al backend (rechazar).
- * Reemplaza notificarRechazoMock — misma firma.
+ * El backend reasigna el viaje al siguiente conductor, o lo cancela si no hay.
  *
- * @param {string} nroViaje UUID del viaje
+ * @param {number} nroViaje ID autoincremental del viaje
  */
-export function notificarRechazoMock(nroViaje) {
+export function rechazarViaje(nroViaje) {
   api.rechazarViaje(nroViaje).catch((err) =>
     console.error('[conductorService] Error al rechazar viaje:', err.message)
   );
@@ -128,14 +123,13 @@ export function notificarRechazoMock(nroViaje) {
 /**
  * Avisa al pasajero que el colectivo se acerca a su parada de descenso
  * (simulado — en producción lo dispararía el GPS).
- * Reemplaza al TODO de useConductorRealtime → llama al backend real.
  *
  * Idempotente en el backend: si ya se notificó este viaje, no vuelve
  * a emitir el evento al pasajero (ver notificado:false en la respuesta).
  *
- * @param {string} nroViaje UUID del viaje
+ * @param {number} nroViaje ID autoincremental del viaje
  */
-export function notificarProximidadMock(nroViaje) {
+export function notificarProximidad(nroViaje) {
   api.notificarProximidad(nroViaje).catch((err) =>
     console.error('[conductorService] Error al notificar proximidad:', err.message)
   );
@@ -143,14 +137,14 @@ export function notificarProximidadMock(nroViaje) {
 
 /**
  * El conductor confirma el descenso del pasajero → llama al backend.
- * Reemplaza al TODO de useConductorRealtime (confirmarBajada) — misma firma.
+ * El viaje pasa a FINALIZADO.
  *
  * El pasajero se entera en tiempo real vía socket 'descenso:confirmado'
  * (manejado en pasajeroService → suscribirseABordo).
  *
- * @param {string} nroViaje UUID del viaje
+ * @param {number} nroViaje ID autoincremental del viaje
  */
-export function confirmarDescensoMock(nroViaje) {
+export function confirmarDescenso(nroViaje) {
   api.confirmarDescenso(nroViaje).catch((err) =>
     console.error('[conductorService] Error al confirmar descenso:', err.message)
   );

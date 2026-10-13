@@ -1,11 +1,10 @@
 // src/pages/pasajero/EsperaPage.jsx
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-// 🔁 Swap: mock → servicio real (misma interfaz)
 import {
-  suscribirseAViaje            as suscribirseAViajeMock,
-  reiniciarCicloArribo         as reiniciarCicloArriboMock,
-  notificarCancelacionAlConductor as notificarCancelacionAlConductorMock,
+  suscribirseAViaje,
+  reiniciarCicloArribo,
+  notificarCancelacionAlConductor,
   confirmarAscenso,
 } from "@/services/pasajeroService";
 import { useEsperaVoiceFlow } from "@/hooks/useEsperaVoiceFlow";
@@ -37,7 +36,7 @@ export default function EsperaPage() {
     setErrorCancelacion(null);
 
     try {
-      await notificarCancelacionAlConductorMock(viaje.numeroSolicitud);
+      await notificarCancelacionAlConductor(viaje.numeroSolicitud);
     } catch (err) {
       // No navegamos: el viaje sigue vivo en el backend y el conductor puede
       // estar yendo a buscar al pasajero. Sacarlo de la espera acá dejaría un
@@ -79,7 +78,7 @@ export default function EsperaPage() {
         setColectivoLlego(false);
         anunciar("Recalculando ubicación del colectivo");
         unsubscribeRef.current?.();
-        unsubscribeRef.current = reiniciarCicloArriboMock(viaje.numeroSolicitud, manejarEvento);
+        unsubscribeRef.current = reiniciarCicloArribo(viaje.numeroSolicitud, manejarEvento);
       },
     });
   };
@@ -123,7 +122,7 @@ export default function EsperaPage() {
     }
 
     anunciar("Procesando solicitud de viaje");
-    unsubscribeRef.current = suscribirseAViajeMock(viaje.numeroSolicitud, manejarEvento);
+    unsubscribeRef.current = suscribirseAViaje(viaje.numeroSolicitud, manejarEvento);
 
     return () => {
       unsubscribeRef.current?.();

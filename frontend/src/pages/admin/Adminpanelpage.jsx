@@ -9,7 +9,7 @@
 // un botón "Ver" que abre el modal.
 //
 // Si no hay sesión de administrador (el backend responde 401 o 403) se redirige a /login.
-// TODO: envolver esta ruta en un RequireRole('admin') cuando exista AuthContext.
+// La ruta está protegida por RequireRole (ver App.jsx); esta redirección cubre la sesión que vence con el panel abierto.
 
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -19,10 +19,11 @@ import { SolicitudesBandeja } from "@/components/admin/SolicitudesBandeja";
 import { CertificadoModal } from "@/components/admin/CertificadoModal";
 import { useAdminKpis } from "@/hooks/useAdminKpis";
 import { useSolicitudes } from "@/hooks/useSolicitudes";
-import { logout } from "@/services/api/authApi";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AdminPanelPage() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const { kpis, cargando: cargandoKpis, error: errorKpis, recargar: recargarKpis } = useAdminKpis();
   const {
     solicitudes,
@@ -50,13 +51,9 @@ export default function AdminPanelPage() {
   const hayErrorDeCarga = !sesionInvalida && Boolean(errorKpis || errorSolicitudes);
 
   const handleCerrarSesion = useCallback(async () => {
-    try {
-      await logout();
-    } catch {
-      // Aunque falle el cierre en el servidor, volvemos al login.
-    }
+    await logout();
     navigate("/login", { replace: true });
-  }, [navigate]);
+  }, [logout, navigate]);
 
   const mostrarFeedback = useCallback((tipo, mensaje) => {
     setFeedback({ tipo, mensaje });

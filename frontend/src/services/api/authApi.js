@@ -23,6 +23,15 @@ export function login({ email, password }) {
   return apiFetch("/api/auth/login", { method: "POST", json: { email, password } });
 }
 
+/**
+ * Sesión actual (la cookie viaja sola). Si el access token venció, apiClient lo renueva con el refresh token.
+ * Responde 401 si no hay sesión.
+ * @returns {Promise<{ nombreUsuario: string, rol: string, nombre: string, apellido: string }>}
+ */
+export function obtenerSesion() {
+  return apiFetch("/api/auth/me");
+}
+
 export function logout() {
   return apiFetch("/api/auth/logout", { method: "POST" });
 }

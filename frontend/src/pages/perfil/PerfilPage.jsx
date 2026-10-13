@@ -7,6 +7,7 @@ import { CertificadoModal } from "@/components/perfil/CertificadoModal";
 import { Toast } from "@/components/common/Toast";
 import { BottomNav } from "@/components/pasajero/BottomNav";
 import { getPerfil, actualizarPerfil } from "@/services/mock/mockPerfilService";
+import { useAuth } from "@/context/AuthContext";
 
 /**
  * Vista de Perfil (Pasajero / Conductor / Admin).
@@ -23,6 +24,7 @@ const ROL_LABEL = {
 
 export default function PerfilPage() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -31,10 +33,8 @@ export default function PerfilPage() {
   const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // 🔧 DEV: navega a /login como placeholder.
-  // En producción: llamar al servicio de auth real (módulo de otra compañera)
-  // antes de navegar, para invalidar la cookie/token.
-  const handleCerrarSesion = () => {
+  const handleCerrarSesion = async () => {
+    await logout();
     navigate("/login", { replace: true });
   };
 

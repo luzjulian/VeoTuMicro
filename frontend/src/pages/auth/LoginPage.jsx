@@ -1,26 +1,34 @@
 // frontend/src/pages/auth/LoginPage.jsx
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { login, logout, ROL_DE_PESTANIA, RUTA_POR_ROL } from "@/services/api/authApi";
+import { useAuth } from "@/context/AuthContext";
+import { ROL_DE_PESTANIA, RUTA_POR_ROL } from "@/services/api/authApi";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { usuario, cargando, login } = useAuth();
   const [activeTab, setActiveTab] = useState("pasajero");
 
   // data = { rol, email, password }. Si algo falla, el error se lanza y LoginForm lo muestra.
   const handleLogin = async ({ rol, email, password }) => {
-    const sesion = await login({ email, password });
-
-    // La pestaña elegida tiene que coincidir con el rol real de la cuenta.
-    if (sesion.rol !== ROL_DE_PESTANIA[rol]) {
-      await logout().catch(() => {});
-      throw new Error(`Esta cuenta no es de ${rol.toLowerCase()}. Elegí la pestaña que corresponde.`);
-    }
+    // La pestaña elegida tiene que coincidir con el rol real de la cuenta
+    // (si no coincide, login() cierra la sesión y lanza el error).
+    const sesion = await login({
+      email,
+      password,
+      rolEsperado: ROL_DE_PESTANIA[rol],
+      nombreRolEsperado: rol,
+    });
 
     navigate(RUTA_POR_ROL[sesion.rol]);
   };
+
+  // Si ya hay una sesión recordada, no tiene sentido mostrar el login.
+  if (!cargando && usuario) {
+    return <Navigate to={RUTA_POR_ROL[usuario.rol] ?? "/"} replace />;
+  }
 
   return (
     <div className="min-h-dvh bg-fondo-principal flex flex-col items-center justify-center p-4 sm:p-6">

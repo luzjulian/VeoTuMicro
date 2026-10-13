@@ -11,6 +11,7 @@ import ABordoPage from "./pages/pasajero/ABordoPage";
 import PanelConductorPage from "./pages/conductor/PanelConductorPage";
 import AdminPanelPage from "./pages/admin/Adminpanelpage";
 import PerfilPage from "./pages/perfil/PerfilPage";
+import { RequireRole } from "./components/auth/RequireRole";
 
 function App() {
   return (
@@ -21,18 +22,28 @@ function App() {
         <Route path="/registro" element={<RegisterPage />} />
         <Route path="/registro/pendiente" element={<ValidationPendingPage />} />
 
-        <Route path="/pasajero" element={<PasajeroFlowLayout />}>
-          <Route index element={<Navigate to="linea" replace />} />
-          <Route path="linea" element={<SeleccionLineaPage />} />
-          <Route path="destino" element={<SeleccionDestinoPage />} />
-          <Route path="espera" element={<EsperaPage />} />
-          <Route path="viaje" element={<ABordoPage />} />
+        {/* Rutas protegidas: sin sesión van a /login; con otro rol, a la pantalla de su rol */}
+        <Route element={<RequireRole roles={["pasajero"]} />}>
+          <Route path="/pasajero" element={<PasajeroFlowLayout />}>
+            <Route index element={<Navigate to="linea" replace />} />
+            <Route path="linea" element={<SeleccionLineaPage />} />
+            <Route path="destino" element={<SeleccionDestinoPage />} />
+            <Route path="espera" element={<EsperaPage />} />
+            <Route path="viaje" element={<ABordoPage />} />
+          </Route>
         </Route>
 
-        <Route path="/conductor" element={<PanelConductorPage />} />
-        <Route path="/admin" element={<AdminPanelPage/>}/>
-        <Route path="/perfil" element={<PerfilPage/>}/>
-  
+        <Route element={<RequireRole roles={["chofer"]} />}>
+          <Route path="/conductor" element={<PanelConductorPage />} />
+        </Route>
+
+        <Route element={<RequireRole roles={["administrativo"]} />}>
+          <Route path="/admin" element={<AdminPanelPage />} />
+        </Route>
+
+        <Route element={<RequireRole />}>
+          <Route path="/perfil" element={<PerfilPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

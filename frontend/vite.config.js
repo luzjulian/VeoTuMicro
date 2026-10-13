@@ -13,16 +13,12 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Redirige /api/* al backend Express
+      // Todo el backend cuelga de /api: endpoints REST y el handshake
+      // y los WebSockets de Socket.io (/api/socket.io).
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
-      },
-      // Redirige el handshake y los WebSockets de Socket.io al backend
-      '/socket.io': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        ws: true,   // ← activa el proxy WebSocket
+        ws: true, //← activa el proxy WebSocket
       },
     },
   },

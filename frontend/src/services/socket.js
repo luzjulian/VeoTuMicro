@@ -1,8 +1,9 @@
 // src/services/socket.js
 //
 // Fábrica de sockets Socket.io por rol.
-// En DEV: autentica con devUser en handshake.auth (proxy de Vite → backend).
-// En PROD: el backend lee la cookie JWT (sin cambios aquí).
+// Autentica con la cookie del access token, que viaja en el handshake porque
+// el socket vive bajo /api. El devUser es un fallback temporal de desarrollo
+// que se elimina junto con dev-auth.
 //
 // Cada rol tiene su propia instancia para que pasajero y chofer
 // puedan coexistir en la misma ventana durante pruebas locales.
@@ -24,7 +25,10 @@ export function getSocket(devUser) {
   if (!sockets.has(key)) {
     const devUserJson = JSON.stringify(devUser);
     const socket = io({
-      // Sin host → misma origin; el proxy de Vite reenvía /socket.io al backend.
+      // Sin host → misma origin; el proxy de Vite reenvía /api al backend.
+      //El path tiene que coincidir con el del servidor ( ver backend/src/server.js)
+      // bajo /api para que el navegador adjute la cookie del access token.
+      path:'/api/socket.io',
       // devUser va en AMBOS lugares:
       //   auth  → CONNECT packet de Socket.io (ruta normal)
       //   query → query string del handshake HTTP (fallback cuando Vite no

@@ -323,13 +323,18 @@ const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
     data:  { conduceOid: nuevoConduceOid },
   });
 
-  // Notificar al nuevo conductor
+  // Notificar al nuevo conductor. El payload debe ser idéntico al de
+  // iniciarViaje: sin las coordenadas el panel no puede geocodificar la parada
+  // y muestra el nroParada crudo, y sin el nombre muestra "Pasajero".
   const nuevoUsername = nuevoChofer.persona.cuenta?.nombreUsuario;
   if (nuevoUsername) {
     io.to(`conductor:${nuevoUsername}`).emit('nueva:solicitud', {
       nroViaje,
-      parada:  nroParada,
-      destino: viaje.destino,
+      parada:         nroParada,
+      paradaLatitud:  viaje.parada.latitud,
+      paradaLongitud: viaje.parada.longitud,
+      destino:        viaje.destino,
+      pasajero:       viaje.pasajero.persona?.nombreApellido ?? 'Pasajero',
     });
   }
 

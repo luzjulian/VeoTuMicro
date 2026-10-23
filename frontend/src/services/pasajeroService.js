@@ -14,6 +14,66 @@ const socket = () => getSocket();
 
 const MS_POR_MINUTO_SIMULADO = 60_000; // 1 min real en producción
 
+// ── Referencia de reloj del arribo ───────────────────────────────────────────
+//
+// El backend devuelve el arribo como un offset ("5 minutos"), no como un
+// instante, porque el JSON de próximos arribos es estático. Entonces al
+// recargar la página volvía a leer el mismo 5 y la cuenta regresiva arrancaba
+// de cero. Acá guardamos el instante en que vence ese arribo, para poder
+// calcular cuánto falta de verdad después de una recarga.
+//
+// Ojo con el alcance: esto NO decide si el viaje existe — eso lo sigue
+// diciendo el backend. Es solo una referencia de reloj, atada al nroViaje.
+// Si no está, está corrupta o es de otro viaje, se ignora y queda el offset
+// del backend, que es el comportamiento que había antes.
+
+const CLAVE_ARRIBO = 'veotumicro:arribo';
+
+/** Recuerda cuándo vence el arribo de este viaje. */
+function guardarArribo(nroViaje, minutos) {
+  try {
+    localStorage.setItem(
+      CLAVE_ARRIBO,
+      JSON.stringify({ nroViaje, venceEn: Date.now() + minutos * MS_POR_MINUTO_SIMULADO })
+    );
+  } catch {
+    // Modo privado o storage bloqueado: seguimos sin persistir.
+  }
+}
+
+/** Olvida el arribo guardado. Se llama cuando el viaje deja de estar en espera. */
+function olvidarArribo() {
+  try {
+    localStorage.removeItem(CLAVE_ARRIBO);
+  } catch {
+    // Nada que hacer: si no se puede borrar, el guard por nroViaje alcanza.
+  }
+}
+
+/**
+ * Minutos que faltan para el arribo de este viaje según el instante guardado.
+ * Devuelve `etaDelBackend` si no hay dato utilizable.
+ */
+function minutosRestantesDeArribo(nroViaje, etaDelBackend) {
+  try {
+    const crudo = localStorage.getItem(CLAVE_ARRIBO);
+    if (!crudo) return etaDelBackend;
+
+    const { nroViaje: guardado, venceEn } = JSON.parse(crudo);
+    if (guardado !== nroViaje || typeof venceEn !== 'number') return etaDelBackend;
+
+    const minutos = Math.ceil((venceEn - Date.now()) / MS_POR_MINUTO_SIMULADO);
+
+    // Más tiempo que el offset original significa reloj cambiado o dato
+    // corrupto: no le creemos y volvemos al dato del backend.
+    if (etaDelBackend != null && minutos > etaDelBackend) return etaDelBackend;
+
+    return Math.max(minutos, 0); // 0 = el arribo ya venció
+  } catch {
+    return etaDelBackend;
+  }
+}
+
 /**
  * Inicia el ciclo de countdown de arribo.
  * Emite: eta_actualizado, aviso_un_minuto, colectivo_llego.
@@ -60,6 +120,32 @@ export async function crearSolicitud({ nroParada, nroLinea, ramal, destino }) {
 }
 
 /**
+ * Pregunta al backend si el pasajero tiene un viaje en curso. Se usa al montar
+ * el flujo para recuperarlo después de recargar la página o perder la conexión.
+ *
+ * La fuente de verdad es la base y no el navegador: un viaje guardado en
+ * localStorage podría haber sido cancelado o finalizado mientras la app estaba
+ * sin conexión, y dejaría al pasajero esperando un viaje que ya no existe.
+ *
+ * @returns {Promise<object | null>} el viaje en curso, o null si no hay
+ */
+export async function obtenerViajeActivo() {
+  const viaje = (await api.obtenerViajeActivo()) ?? null;
+  if (!viaje) {
+    olvidarArribo(); // no hay viaje: lo guardado ya no sirve para nada
+    return null;
+  }
+
+  // El offset del backend no sabe cuánto tiempo estuvo el pasajero esperando.
+  // Lo corregimos con el instante de vencimiento que guardamos al arrancar la
+  // cuenta regresiva, así una recarga no reinicia el contador.
+  return {
+    ...viaje,
+    estimadoArribo: minutosRestantesDeArribo(viaje.nroViaje, viaje.estimadoArribo ?? null),
+  };
+}
+
+/**
  * Suscribe al pasajero a los eventos de su viaje vía Socket.io.
  *
  * Eventos emitidos al onEvent:
@@ -71,16 +157,48 @@ export async function crearSolicitud({ nroParada, nroLinea, ramal, destino }) {
  *
  * @param {number} nroViaje ID autoincremental del viaje
  * @param {(evento: string, payload: object) => void} onEvent
+ * @param {{ estimadoArribo?: number | null }} [opciones]
+ *   estimadoArribo arranca la cuenta regresiva al suscribirse, sin esperar el
+ *   evento viaje:confirmado. Se usa al recuperar un viaje ya confirmado tras
+ *   recargar la página: ese evento ya se disparó y no vuelve a llegar, así que
+ *   sin esto el ETA quedaría vacío y nunca llegaría el aviso de arribo.
+ *   Si viene en 0 el arribo ya venció y se avisa la llegada enseguida.
  * @returns {() => void} cleanup
  */
-export function suscribirseAViaje(nroViaje, onEvent) {
+export function suscribirseAViaje(nroViaje, onEvent, { estimadoArribo = null } = {}) {
   const s = socket();
   let cleanupCiclo = null;
 
-  const handleConfirmado = ({ nroViaje: id, estimadoArribo }) => {
+  /**
+   * Un solo ciclo vivo a la vez: si ya había uno corriendo lo cortamos antes
+   * de arrancar el nuevo, para no dejar un setInterval huérfano.
+   *
+   * `persistir` queda en false al recuperar un viaje: el instante guardado ya
+   * existe y es el exacto, así que reescribirlo con el resto redondeado haría
+   * que cada recarga sume unos segundos.
+   */
+  const arrancarCiclo = (minutos, { persistir = true } = {}) => {
+    cleanupCiclo?.();
+
+    if (minutos <= 0) {
+      // El arribo venció mientras el pasajero estaba sin conexión: avisamos la
+      // llegada enseguida en lugar de esperar un tick del contador.
+      onEvent('colectivo_llego', { numeroSolicitud: nroViaje });
+      return;
+    }
+
+    if (persistir) guardarArribo(nroViaje, minutos);
+    cleanupCiclo = iniciarCicloArribo(nroViaje, minutos, onEvent);
+  };
+
+  if (typeof estimadoArribo === 'number') {
+    arrancarCiclo(estimadoArribo, { persistir: false });
+  }
+
+  const handleConfirmado = ({ nroViaje: id, estimadoArribo: eta }) => {
     if (id !== nroViaje) return;
-    onEvent('conductor_confirmado', { numeroSolicitud: id, minutosIniciales: estimadoArribo });
-    cleanupCiclo = iniciarCicloArribo(id, estimadoArribo, onEvent);
+    onEvent('conductor_confirmado', { numeroSolicitud: id, minutosIniciales: eta });
+    arrancarCiclo(eta);
   };
 
   const handleCancelado = (payload) => {
@@ -114,6 +232,9 @@ export function reiniciarCicloArribo(nroViaje, onEvent) {
   timers.push(
     setTimeout(() => {
       onEvent('eta_recalculada', { numeroSolicitud: nroViaje, minutosRestantes: MINUTOS_RECALCULO });
+      // Nueva cuenta regresiva → nuevo instante de vencimiento, para que una
+      // recarga después del recálculo también retome donde iba.
+      guardarArribo(nroViaje, MINUTOS_RECALCULO);
       const cleanup = iniciarCicloArribo(nroViaje, MINUTOS_RECALCULO, onEvent);
       timers.push(cleanup); // no es un timer ID, pero cleanup() lo maneja
     }, 1200)
@@ -134,7 +255,9 @@ export function reiniciarCicloArribo(nroViaje, onEvent) {
  * @returns {Promise<{ estado: 'CANCELADO', notificado: boolean }>}
  */
 export async function notificarCancelacionAlConductor(nroViaje) {
-  return api.cancelarViaje(nroViaje);
+  const resultado = await api.cancelarViaje(nroViaje);
+  olvidarArribo(); // el viaje ya no espera arribo
+  return resultado;
 }
 
 /**
@@ -143,7 +266,9 @@ export async function notificarCancelacionAlConductor(nroViaje) {
  * @param {string} nroViaje
  */
 export async function confirmarAscenso(nroViaje) {
-  return api.confirmarAscenso(nroViaje);
+  const resultado = await api.confirmarAscenso(nroViaje);
+  olvidarArribo(); // el pasajero ya subió: la espera terminó
+  return resultado;
 }
 
 /**

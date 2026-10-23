@@ -18,6 +18,103 @@ const router = Router();
 
 /**
  * @swagger
+ * /api/viajes/activo:
+ *   get:
+ *     summary: Devuelve el viaje en curso del pasajero (pasajero)
+ *     description: >
+ *       Permite al front recuperar el viaje después de recargar la página o de
+ *       perder la conexión, y volver a la pantalla donde estaba el pasajero.
+ *       Se considera en curso un viaje en PENDIENTE, CONFIRMADO o ABORDO.
+ *       No tener viaje en curso no es un error: responde 200 con null.
+ *       estimadoArribo viene solo con el viaje en CONFIRMADO, para que el
+ *       front pueda reanudar la cuenta regresiva de arribo, y puede ser null
+ *       si el mock de arribos no tiene datos para esa parada y línea.
+ *     tags: [Viajes]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: El viaje en curso, o null si no hay ninguno
+ *         content:
+ *           application/json:
+ *             schema:
+ *               nullable: true
+ *               type: object
+ *               properties:
+ *                 nroViaje:       { type: integer, example: 1 }
+ *                 estado:         { type: string,  example: "CONFIRMADO" }
+ *                 destino:        { type: string,  example: "7 y 47" }
+ *                 nroParada:      { type: string,  example: "0001" }
+ *                 paradaLatitud:  { type: number,  example: -34.921 }
+ *                 paradaLongitud: { type: number,  example: -57.954 }
+ *                 nroLinea:       { type: string,  example: "307" }
+ *                 ramal:          { type: string,  example: "A" }
+ *                 estimadoArribo:
+ *                   type: integer
+ *                   nullable: true
+ *                   example: 5
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: El usuario no tiene perfil de pasajero
+ */
+router.get(
+  '/activo',
+  requireAuth,
+  soloRol('pasajero'),
+  viajesController.obtenerViajeActivo
+);
+
+/**
+ * @swagger
+ * /api/viajes/activos:
+ *   get:
+ *     summary: Devuelve los viajes en curso del conductor (chofer)
+ *     description: >
+ *       La bandeja del panel del conductor se alimenta solo de eventos de
+ *       Socket.io y arranca vacía, así que al recargar la página el conductor
+ *       perdía de vista sus viajes asignados — incluido el botón para
+ *       confirmar el descenso de un pasajero ya a bordo.
+ *       Devuelve los viajes en PENDIENTE, CONFIRMADO o ABORDO de los conduce
+ *       todavía abiertos del chofer autenticado, del más reciente al más
+ *       antiguo.
+ *     tags: [Viajes]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Los viajes en curso (lista vacía si no hay ninguno)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   nroViaje:        { type: integer, example: 1 }
+ *                   estado:          { type: string,  example: "ABORDO" }
+ *                   destino:         { type: string,  example: "7 y 47" }
+ *                   nroParada:       { type: string,  example: "0001" }
+ *                   paradaLatitud:   { type: number,  example: -34.921 }
+ *                   paradaLongitud:  { type: number,  example: -57.954 }
+ *                   nroLinea:        { type: string,  example: "307" }
+ *                   ramal:           { type: string,  example: "A" }
+ *                   pasajero:        { type: string,  example: "Ana Pérez" }
+ *                   fechaHoraInicio: { type: string,  format: date-time }
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: El usuario no tiene perfil de chofer
+ */
+router.get(
+  '/activos',
+  requireAuth,
+  soloRol('chofer'),
+  viajesController.obtenerViajesActivosDeChofer
+);
+
+/**
+ * @swagger
  * /api/viajes:
  *   post:
  *     summary: Inicia un nuevo viaje (pasajero)

@@ -11,13 +11,63 @@ import { geocodificarCoordenadas } from '@/services/geocodingService.js';
 const api    = createViajesApi();
 const socket = () => getSocket();
 
+// Estado del viaje en el backend → estado de la solicitud en la bandeja.
+const ESTADO_FRONT = {
+  PENDIENTE:  'pendiente',
+  CONFIRMADO: 'aceptada',
+  ABORDO:     'a_bordo',
+};
+
+/**
+ * Traduce los viajes del backend a la forma que usa la bandeja del panel.
+ *
+ * Geocodifica las paradas de a una y sin repetir: Nominatim admite como máximo
+ * un pedido por segundo y prohíbe las ráfagas en paralelo, así que un
+ * Promise.all sobre los viajes podría devolver 429 o hacer que bloqueen la IP.
+ * Varios viajes suelen compartir parada, de ahí la caché por nroParada.
+ */
+async function aSolicitudes(viajes) {
+  const direcciones = new Map();
+
+  for (const v of viajes) {
+    if (direcciones.has(v.nroParada)) continue;
+    if (v.paradaLatitud == null || v.paradaLongitud == null) continue;
+
+    try {
+      direcciones.set(
+        v.nroParada,
+        await geocodificarCoordenadas({
+          latitud:  v.paradaLatitud,
+          longitud: v.paradaLongitud,
+        })
+      );
+    } catch {
+      // Silencioso: abajo queda el nroParada como fallback.
+    }
+  }
+
+  return viajes.map((v) => ({
+    numeroSolicitud: v.nroViaje,
+    nroLinea:        v.nroLinea,
+    ramal:           v.ramal,
+    paradaSubida:    direcciones.get(v.nroParada) ?? v.nroParada,
+    paradaDestino:   v.destino,
+    pasajero:        v.pasajero ?? 'Pasajero',
+    // Toda cuenta de pasajero de la app tiene certificado de discapacidad
+    // (Pasajero.certificadoDiscapacidad es obligatorio en el schema).
+    discapacidadVisual: true,
+    estado:          ESTADO_FRONT[v.estado] ?? 'pendiente',
+    fechaHoraInicio: v.fechaHoraInicio,
+  }));
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Suscribe el Panel del Conductor a los eventos de Socket.io.
  *
  * Eventos emitidos al onEvent:
- *   solicitudes_iniciales → { solicitudes: [] }  (sin endpoint aún)
+ *   solicitudes_iniciales → { solicitudes }  (viajes ya asignados, vía GET /activos)
  *   nueva_solicitud       → { solicitud }
  *   pasajero_a_bordo      → { numeroSolicitud, paradaDestino, pasajero }
  *   solicitud_cancelada   → { numeroSolicitud, pasajero }
@@ -28,11 +78,22 @@ const socket = () => getSocket();
 export function suscribirsePanelConductor(onEvent) {
   const s = socket();
 
-  // Sin endpoint de "viajes activos" por ahora → lista vacía al arrancar
-  const t = setTimeout(
-    () => onEvent('solicitudes_iniciales', { solicitudes: [] }),
-    300
-  );
+  // Recupera los viajes ya asignados al chofer: la bandeja se alimenta de
+  // sockets, así que sin esto una recarga la dejaba vacía y el conductor perdía
+  // el botón para confirmar el descenso de un pasajero a bordo.
+  let cancelado = false;
+  api
+    .obtenerViajesActivos()
+    .then((viajes) => aSolicitudes(viajes ?? []))
+    .then((solicitudes) => {
+      if (!cancelado) onEvent('solicitudes_iniciales', { solicitudes });
+    })
+    .catch((err) => {
+      console.error('[conductorService] Error al recuperar viajes activos:', err.message);
+      // La bandeja arranca vacía, igual que antes: el panel sigue usable y los
+      // viajes nuevos llegan por socket.
+      if (!cancelado) onEvent('solicitudes_iniciales', { solicitudes: [] });
+    });
 
   const handleNuevaSolicitud = async ({ nroViaje, parada, paradaLatitud, paradaLongitud, destino, pasajero }) => {
     // Geocodificar la parada si tenemos coordenadas; si falla usamos el nroParada
@@ -82,7 +143,7 @@ export function suscribirsePanelConductor(onEvent) {
   s.on('solicitud:cancelada', handleSolicitudCancelada);
 
   return () => {
-    clearTimeout(t);
+    cancelado = true;
     s.off('nueva:solicitud',     handleNuevaSolicitud);
     s.off('pasajero:abordo',     handlePasajeroAbordo);
     s.off('solicitud:cancelada', handleSolicitudCancelada);

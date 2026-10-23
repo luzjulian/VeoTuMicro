@@ -195,6 +195,47 @@ const cancelarViaje = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/viajes/activo
+ * Rol requerido: pasajero
+ *
+ * Respuesta 200:
+ *   { nroViaje, estado, destino, nroParada, paradaLatitud, paradaLongitud,
+ *     nroLinea, ramal, estimadoArribo }  — o null si no hay viaje en curso,
+ *   que no es un error.
+ */
+const obtenerViajeActivo = async (req, res, next) => {
+  try {
+    const viaje = await viajesService.obtenerViajeActivo({
+      cuentaOid: getCuentaOid(req),
+    });
+
+    res.status(200).json(viaje);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/viajes/activos
+ * Rol requerido: chofer
+ *
+ * Respuesta 200:
+ *   [ { nroViaje, estado, destino, nroParada, paradaLatitud, paradaLongitud,
+ *       nroLinea, ramal, pasajero, fechaHoraInicio } ]
+ */
+const obtenerViajesActivosDeChofer = async (req, res, next) => {
+  try {
+    const viajes = await viajesService.obtenerViajesActivosDeChofer({
+      cuentaOid: getCuentaOid(req),
+    });
+
+    res.status(200).json(viajes);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   iniciarViaje,
   confirmarViaje,
@@ -203,4 +244,6 @@ module.exports = {
   notificarProximidad,
   confirmarDescenso,
   cancelarViaje,
+  obtenerViajeActivo,
+  obtenerViajesActivosDeChofer,
 };

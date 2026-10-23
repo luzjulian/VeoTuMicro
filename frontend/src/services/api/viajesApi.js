@@ -31,6 +31,23 @@ export function createViajesApi(devUser) {
   }
 
   return {
+
+        /**
+     * GET /api/viajes/activo
+     * Viaje en curso del pasajero autenticado (PENDIENTE, CONFIRMADO o ABORDO),
+     * para recuperar el flujo después de recargar la página.
+     * @returns {Promise<object | null>}
+     */
+    obtenerViajeActivo: () => fetchJson(`${BASE}/activo`),
+
+    /**
+     * GET /api/viajes/activos
+     * Viajes en curso del chofer autenticado, para rehidratar la bandeja del
+     * panel después de recargar la página.
+     * @returns {Promise<object[]>}
+     */
+    obtenerViajesActivos: () => fetchJson(`${BASE}/activos`),
+
     /**
      * POST /api/viajes
      * Requiere header Idempotency-Key (UUID v4) para prevenir viajes duplicados.

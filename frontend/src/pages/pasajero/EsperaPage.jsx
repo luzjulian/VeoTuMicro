@@ -11,11 +11,19 @@ import { useEsperaVoiceFlow } from "@/hooks/useEsperaVoiceFlow";
 import { VoiceStatusCircle } from "@/components/pasajero/VoiceStatusCircle";
 
 export default function EsperaPage() {
-  const { viaje, actualizarViaje, resetViaje } = useOutletContext();
+  const { viaje, actualizarViaje, resetViaje, recuperado } = useOutletContext();
   const navigate = useNavigate();
 
-  const [minutosRestantes, setMinutosRestantes] = useState(null);
-  const [conductorConfirmo, setConductorConfirmo] = useState(false);
+  // Se compara contra el estado del backend, que es el dato autoritativo, y no
+  // contra el ETA, que es derivado: hoy iniciarViaje garantiza que todo viaje
+  // tenga arribo, pero ese invariante lo sostiene el JSON estático de arribos,
+  // no el dominio. Con la API real los arribos cambian con el tiempo y el
+  // chofer asignado puede dejar de figurar con el viaje todavía confirmado.
+  const recuperadoConfirmado = recuperado?.estado === "CONFIRMADO";
+  const etaRecuperado = recuperado?.estimadoArribo ?? null;
+
+  const [minutosRestantes, setMinutosRestantes] = useState(etaRecuperado);
+  const [conductorConfirmo, setConductorConfirmo] = useState(recuperadoConfirmado);
   const [colectivoLlego, setColectivoLlego] = useState(false);
 
   const [cancelando, setCancelando] = useState(false);
@@ -121,8 +129,26 @@ export default function EsperaPage() {
       return;
     }
 
-    anunciar("Procesando solicitud de viaje");
-    unsubscribeRef.current = suscribirseAViaje(viaje.numeroSolicitud, manejarEvento);
+    if (recuperadoConfirmado) {
+      // Viaje recuperado tras recargar: retomamos donde estaba en lugar de
+      // anunciar que se está procesando la solicitud. La escucha constante
+      // también se activa acá, porque el evento que normalmente la dispara
+      // (conductor_confirmado) ya pasó y no vuelve a llegar.
+      anunciar(
+        etaRecuperado
+          ? `Retomando tu viaje. Tu colectivo llegará en ${etaRecuperado} minutos aproximadamente`
+          : "Retomando tu viaje. Tu solicitud ya fue confirmada por el conductor"
+      );
+      anunciar('Decí "Cancelar viaje" en cualquier momento si deseás cancelar tu viaje', {
+        onEnd: () => iniciarEscuchaConstante(),
+      });
+    } else {
+      anunciar("Procesando solicitud de viaje");
+    }
+
+    unsubscribeRef.current = suscribirseAViaje(viaje.numeroSolicitud, manejarEvento, {
+      estimadoArribo: etaRecuperado,
+    });
 
     return () => {
       unsubscribeRef.current?.();

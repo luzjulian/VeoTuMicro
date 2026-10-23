@@ -118,6 +118,10 @@ router.post(
  *       El conductor acepta la solicitud del pasajero.
  *       El viaje pasa a estado CONFIRMADO y se notifica al pasajero
  *       con el tiempo estimado de arribo vía Socket.io.
+ *       La transición es atómica: si el pasajero canceló en paralelo, la
+ *       confirmación no la pisa y devuelve 400.
+ *       Es idempotente: si el viaje ya estaba CONFIRMADO devuelve 200 con
+ *       notificado=false y no vuelve a emitir el evento.
  *     tags: [Viajes]
  *     security:
  *       - cookieAuth: []
@@ -130,7 +134,7 @@ router.post(
  *         description: Identificador numérico del viaje (oid autoincremental)
  *     responses:
  *       200:
- *         description: Viaje confirmado — pasajero notificado
+ *         description: Viaje confirmado (o ya confirmado previamente)
  *         content:
  *           application/json:
  *             schema:
@@ -143,6 +147,10 @@ router.post(
  *                   type: integer
  *                   nullable: true
  *                   example: 5
+ *                 notificado:
+ *                   type: boolean
+ *                   description: false si el viaje ya estaba confirmado (reintento); no se reenvía el aviso
+ *                   example: true
  *       400:
  *         description: El viaje no está en estado PENDIENTE
  *       403:
@@ -167,6 +175,9 @@ router.post(
  *       El conductor rechaza la solicitud. El sistema busca el siguiente
  *       conductor disponible en el mock y reasigna el viaje.
  *       Si no hay más conductores, el viaje se cancela y se notifica al pasajero.
+ *       Ambas transiciones son atómicas: la reasignación se condiciona al
+ *       conduce sobre el que se decidió, para no saltear un conductor si dos
+ *       rechazos llegan en paralelo.
  *     tags: [Viajes]
  *     security:
  *       - cookieAuth: []
@@ -178,7 +189,7 @@ router.post(
  *           type: integer
  *     responses:
  *       200:
- *         description: Reasignado o cancelado
+ *         description: Reasignado o cancelado (o ya resuelto previamente)
  *         content:
  *           application/json:
  *             schema:
@@ -191,6 +202,10 @@ router.post(
  *                 reasignado:
  *                   type: boolean
  *                   example: false
+ *                 notificado:
+ *                   type: boolean
+ *                   description: false si el rechazo ya se había procesado (reintento)
+ *                   example: true
  *       400:
  *         description: El viaje no está en estado PENDIENTE
  *       403:
@@ -214,6 +229,8 @@ router.post(
  *     description: >
  *       El pasajero confirma que subió al colectivo.
  *       El viaje pasa a estado ABORDO y se notifica al conductor.
+ *       Es idempotente: si el pasajero ya estaba ABORDO devuelve 200 con
+ *       notificado=false y no vuelve a emitir el evento.
  *     tags: [Viajes]
  *     security:
  *       - cookieAuth: []
@@ -225,7 +242,7 @@ router.post(
  *           type: integer
  *     responses:
  *       200:
- *         description: Ascenso confirmado
+ *         description: Ascenso confirmado (o ya confirmado previamente)
  *         content:
  *           application/json:
  *             schema:
@@ -234,6 +251,10 @@ router.post(
  *                 estado:
  *                   type: string
  *                   example: "ABORDO"
+ *                 notificado:
+ *                   type: boolean
+ *                   description: false si el pasajero ya estaba a bordo (reintento)
+ *                   example: true
  *       400:
  *         description: El viaje no está en estado CONFIRMADO
  *       403:
@@ -326,6 +347,10 @@ router.post(
  *                 estado:
  *                   type: string
  *                   example: "FINALIZADO"
+ *                 notificado:
+ *                   type: boolean
+ *                   description: false si el descenso ya estaba confirmado (reintento)
+ *                   example: true
  *       400:
  *         description: El viaje no está en estado ABORDO
  *       403:
@@ -377,6 +402,7 @@ router.post(
  *                   example: "CANCELADO"
  *                 notificado:
  *                   type: boolean
+ *                   description: false si el viaje ya estaba cancelado (reintento)
  *                   example: true
  *       400:
  *         description: El viaje ya está ABORDO o FINALIZADO
@@ -395,4 +421,4 @@ router.post(
   viajesController.cancelarViaje
 );
 
-module.exports = router;                                                                             
+module.exports = router;

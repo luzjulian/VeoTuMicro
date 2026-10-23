@@ -59,8 +59,9 @@ const iniciarViaje = async (req, res, next) => {
  * Params: nroViaje (Int, oid autoincremental del viaje)
  *
  * Respuesta 200:
- *   { estado: 'CONFIRMADO', estimadoArribo: number | null }
- *   + Socket event 'viaje:confirmado' al pasajero
+ *   { estado: 'CONFIRMADO', estimadoArribo: number | null, notificado: boolean }
+ *   + Socket event 'viaje:confirmado' al pasajero (solo la primera vez)
+ *   notificado=false ⇒ el viaje ya estaba confirmado (reintento), no se reemitió
  */
 const confirmarViaje = async (req, res, next) => {
   try {
@@ -83,9 +84,10 @@ const confirmarViaje = async (req, res, next) => {
  * Params: nroViaje (Int, oid autoincremental del viaje)
  *
  * Respuesta 200:
- *   { estado: 'PENDIENTE' | 'CANCELADO', reasignado: boolean }
+ *   { estado: 'PENDIENTE' | 'CANCELADO', reasignado: boolean, notificado: boolean }
  *   + Socket event 'nueva:solicitud' al próximo conductor (si reasignado)
  *   O Socket event 'viaje:cancelado' al pasajero si no hay más conductores
+ *   notificado=false ⇒ el rechazo ya se había procesado (reintento), no se reemitió
  */
 const rechazarViaje = async (req, res, next) => {
   try {
@@ -108,8 +110,9 @@ const rechazarViaje = async (req, res, next) => {
  * Params: nroViaje (Int, oid autoincremental del viaje)
  *
  * Respuesta 200:
- *   { estado: 'ABORDO' }
- *   + Socket event 'pasajero:abordo' al conductor
+ *   { estado: 'ABORDO', notificado: boolean }
+ *   + Socket event 'pasajero:abordo' al conductor (solo la primera vez)
+ *   notificado=false ⇒ el pasajero ya estaba a bordo (reintento), no se reemitió
  */
 const confirmarAscenso = async (req, res, next) => {
   try {
@@ -152,8 +155,9 @@ const notificarProximidad = async (req, res, next) => {
  * Rol requerido: chofer
  *
  * Respuesta 200:
- *   { estado: 'FINALIZADO' }
+ *   { estado: 'FINALIZADO', notificado: boolean }
  *   + Socket event 'descenso:confirmado' al pasajero (solo la primera vez)
+ *   notificado=false ⇒ el descenso ya estaba confirmado (reintento), no se reemitió
  */
 const confirmarDescenso = async (req, res, next) => {
   try {

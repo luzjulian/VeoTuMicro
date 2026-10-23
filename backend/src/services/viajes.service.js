@@ -108,6 +108,43 @@ const buscarViaje = async (nroViaje) => {
 // instancias. Para un solo server alcanza; si el proyecto escala, pasar a la BD.
 const proximidadNotificada = new Set();
 
+/**
+ * Transición de estado atómica.
+ *
+ * `prisma.viaje.update` solo acepta campos únicos en el WHERE (oid), así que
+ * un chequeo de estado hecho antes, en JavaScript, deja una ventana entre la
+ * lectura y la escritura: otro request puede cambiar el estado en el medio y
+ * el update lo pisa igual (lost update).
+ *
+ * `updateMany` sí admite el estado en el WHERE, y la base resuelve el
+ * check-and-set en una sola sentencia. `count` dice si ganamos la transición:
+ *   count === 1 → la hicimos nosotros, y somos los únicos que notificamos.
+ *   count === 0 → o ya no era válida, o perdimos la carrera; releemos el
+ *                 estado real para distinguir un reintento (idempotente) de
+ *                 un pedido inválido (400).
+ *
+ * @param {number}   nroViaje
+ * @param {string[]} desde  estados desde los que la transición es válida
+ * @param {string}   a      estado destino
+ * @param {object}   [extra] otros campos a escribir junto con el estado
+ * @returns {Promise<{ganado: boolean, estadoActual?: string}>}
+ */
+const transicionar = async (nroViaje, desde, a, extra = {}) => {
+  const { count } = await prisma.viaje.updateMany({
+    where: { oid: nroViaje, estado: { in: desde } },
+    data:  { estado: a, ...extra },
+  });
+
+  if (count > 0) return { ganado: true };
+
+  const actual = await prisma.viaje.findUnique({
+    where:  { oid: nroViaje },
+    select: { estado: true },
+  });
+
+  return { ganado: false, estadoActual: actual?.estado };
+};
+
 // ---------------------------------------------------------------------------
 // Casos de uso
 // ---------------------------------------------------------------------------
@@ -132,7 +169,7 @@ const iniciarViaje = async ({ cuentaOid, idempotencyKey, nroParada, nroLinea, ra
     },
   });
 
-  const nombrePasajero = (cuenta?.persona ? nombreCompleto(cuenta.persona) : '') || 'Pasajero';
+  const nombrePasajero = nombreCompleto(cuenta.persona)  || 'Pasajero';
 
   const pasajero = cuenta?.persona?.pasajero;
   if (!pasajero) {
@@ -220,13 +257,8 @@ const iniciarViaje = async ({ cuentaOid, idempotencyKey, nroParada, nroLinea, ra
 const confirmarViaje = async ({ cuentaOid, nroViaje, io }) => {
   const viaje = await buscarViaje(nroViaje);
 
-  if (viaje.estado !== 'PENDIENTE') {
-    throw new BadRequestError(
-      `El viaje no puede confirmarse: estado actual es ${viaje.estado}`
-    );
-  }
-
-  // Validar que el conductor autenticado es el dueño del conduce
+  // La pertenencia del viaje no cambia en el tiempo: validarla sobre la
+  // lectura previa es seguro. El estado sí cambia, y por eso viaja en el WHERE.
   const cuentaAsignada = viaje.conduce.chofer.persona.cuenta;
   if (!cuentaAsignada || cuentaAsignada.oid !== cuentaOid) {
     throw new ForbiddenError('No tenés permiso para confirmar este viaje');
@@ -240,11 +272,19 @@ const confirmarViaje = async ({ cuentaOid, nroViaje, io }) => {
   const arribo = arribos.find((a) => a.dniChofer === dniChofer);
   const estimadoArribo = arribo?.estimadoArribo ?? null;
 
-  // Actualizar estado
-  await prisma.viaje.update({
-    where: { oid: nroViaje },
-    data:  { estado: 'CONFIRMADO' },
-  });
+  // Transición atómica: si el pasajero canceló mientras llegaba este pedido,
+  // la cancelación ya movió el estado y acá count === 0.
+  const { ganado, estadoActual } = await transicionar(nroViaje, ['PENDIENTE'], 'CONFIRMADO');
+
+  if (!ganado) {
+    // Ya estaba confirmado: casi seguro un reintento de red del mismo pedido.
+    if (estadoActual === 'CONFIRMADO') {
+      return { estado: 'CONFIRMADO', estimadoArribo, notificado: false };
+    }
+    throw new BadRequestError(
+      `El viaje no puede confirmarse: estado actual es ${estadoActual}`
+    );
+  }
 
   // Notificar al pasajero (patrón Observer)
   const pasajeroUsername = viaje.pasajero.persona.cuenta?.nombreUsuario;
@@ -255,7 +295,7 @@ const confirmarViaje = async ({ cuentaOid, nroViaje, io }) => {
     });
   }
 
-  return { estado: 'CONFIRMADO', estimadoArribo };
+  return { estado: 'CONFIRMADO', estimadoArribo, notificado: true };
 };
 
 /**
@@ -269,12 +309,6 @@ const confirmarViaje = async ({ cuentaOid, nroViaje, io }) => {
  */
 const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
   const viaje = await buscarViaje(nroViaje);
-
-  if (viaje.estado !== 'PENDIENTE') {
-    throw new BadRequestError(
-      `El viaje no puede rechazarse: estado actual es ${viaje.estado}`
-    );
-  }
 
   // Validar conductor autenticado
   const cuentaAsignada = viaje.conduce.chofer.persona.cuenta;
@@ -294,11 +328,22 @@ const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
   const pasajeroUsername = viaje.pasajero.persona.cuenta?.nombreUsuario;
 
   if (!siguienteArribo) {
-    // No hay más conductores → cancelar viaje
-    await prisma.viaje.update({
-      where: { oid: nroViaje },
-      data:  { estado: 'CANCELADO', fechaHoraFin: new Date() },
-    });
+    // No hay más conductores → cancelar viaje (transición atómica)
+    const { ganado, estadoActual } = await transicionar(
+      nroViaje,
+      ['PENDIENTE'],
+      'CANCELADO',
+      { fechaHoraFin: new Date() }
+    );
+
+    if (!ganado) {
+      if (estadoActual === 'CANCELADO') {
+        return { estado: 'CANCELADO', reasignado: false, notificado: false };
+      }
+      throw new BadRequestError(
+        `El viaje no puede rechazarse: estado actual es ${estadoActual}`
+      );
+    }
 
     if (pasajeroUsername) {
       io.to(`pasajero:${pasajeroUsername}`).emit('viaje:cancelado', {
@@ -307,7 +352,7 @@ const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
       });
     }
 
-    return { estado: 'CANCELADO', reasignado: false };
+    return { estado: 'CANCELADO', reasignado: false, notificado: true };
   }
 
   // Buscar el nuevo conductor activo en la BD
@@ -318,11 +363,30 @@ const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
   );
   const nuevoConduceOid = nuevoChofer.conduce[0].oid;
 
-  // Reasignar el viaje al nuevo conductor
-  await prisma.viaje.update({
-    where: { oid: nroViaje },
+  // Reasignar al nuevo conductor. Esta transición NO cambia el estado, así que
+  // el estado solo no detecta un lost update: si dos rechazos del mismo
+  // conductor llegan juntos, ambos verían PENDIENTE y se saltearía un
+  // conductor de la lista. El guard es el conduce sobre el que se decidió.
+  const { count } = await prisma.viaje.updateMany({
+    where: { oid: nroViaje, estado: 'PENDIENTE', conduceOid: viaje.conduceOid },
     data:  { conduceOid: nuevoConduceOid },
   });
+
+  if (count === 0) {
+    const actual = await prisma.viaje.findUnique({
+      where:  { oid: nroViaje },
+      select: { estado: true, conduceOid: true },
+    });
+
+    // Otro request ya lo reasignó a este mismo conductor: reintento, no error.
+    if (actual?.estado === 'PENDIENTE' && actual.conduceOid === nuevoConduceOid) {
+      return { estado: 'PENDIENTE', reasignado: true, notificado: false };
+    }
+
+    throw new BadRequestError(
+      `El viaje no puede rechazarse: estado actual es ${actual?.estado}`
+    );
+  }
 
   // Notificar al nuevo conductor. El payload debe ser idéntico al de
   // iniciarViaje: sin las coordenadas el panel no puede geocodificar la parada
@@ -335,11 +399,11 @@ const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
       paradaLatitud:  viaje.parada.latitud,
       paradaLongitud: viaje.parada.longitud,
       destino:        viaje.destino,
-      pasajero:       viaje.pasajero.persona?.nombreApellido ?? 'Pasajero',
+      pasajero:       nombreCompleto(viaje.pasajero.persona) || 'Pasajero',
     });
   }
 
-  return { estado: 'PENDIENTE', reasignado: true };
+  return { estado: 'PENDIENTE', reasignado: true, notificado: true };
 };
 
 /**
@@ -354,22 +418,23 @@ const rechazarViaje = async ({ cuentaOid, nroViaje, io }) => {
 const confirmarAscenso = async ({ cuentaOid, nroViaje, io }) => {
   const viaje = await buscarViaje(nroViaje);
 
-  if (viaje.estado !== 'CONFIRMADO') {
-    throw new BadRequestError(
-      `No podés confirmar el ascenso: el estado del viaje es ${viaje.estado}`
-    );
-  }
-
   // Validar que el pasajero autenticado es el dueño del viaje
   const cuentaPasajero = viaje.pasajero.persona.cuenta;
   if (!cuentaPasajero || cuentaPasajero.oid !== cuentaOid) {
     throw new ForbiddenError('No tenés permiso para confirmar el ascenso de este viaje');
   }
 
-  await prisma.viaje.update({
-    where: { oid: nroViaje },
-    data:  { estado: 'ABORDO' },
-  });
+  // Transición atómica: el conductor pudo rechazar o cancelar en el ínterin.
+  const { ganado, estadoActual } = await transicionar(nroViaje, ['CONFIRMADO'], 'ABORDO');
+
+  if (!ganado) {
+    if (estadoActual === 'ABORDO') {
+      return { estado: 'ABORDO', notificado: false };
+    }
+    throw new BadRequestError(
+      `No podés confirmar el ascenso: el estado del viaje es ${estadoActual}`
+    );
+  }
 
   // Notificar al conductor que el pasajero subió
   const conductorUsername = viaje.conduce.chofer.persona.cuenta?.nombreUsuario;
@@ -381,7 +446,7 @@ const confirmarAscenso = async ({ cuentaOid, nroViaje, io }) => {
     });
   }
 
-  return { estado: 'ABORDO' };
+  return { estado: 'ABORDO', notificado: true };
 };
 
 /**
@@ -443,20 +508,23 @@ const confirmarDescenso = async ({ cuentaOid, nroViaje, io }) => {
     throw new ForbiddenError('No tenés permiso para confirmar el descenso de este viaje');
   }
 
-  if (viaje.estado === 'FINALIZADO') {
-    return { estado: 'FINALIZADO' };
-  }
+  // Transición atómica. Si ya estaba FINALIZADO devuelve 200 sin volver a
+  // notificar: es casi seguro un reintento de red del mismo pedido.
+  const { ganado, estadoActual } = await transicionar(
+    nroViaje,
+    ['ABORDO'],
+    'FINALIZADO',
+    { fechaHoraFin: new Date() }
+  );
 
-  if (viaje.estado !== 'ABORDO') {
+  if (!ganado) {
+    if (estadoActual === 'FINALIZADO') {
+      return { estado: 'FINALIZADO', notificado: false };
+    }
     throw new BadRequestError(
-      `No se puede confirmar el descenso: el estado del viaje es ${viaje.estado}`
+      `No se puede confirmar el descenso: el estado del viaje es ${estadoActual}`
     );
   }
-
-  await prisma.viaje.update({
-    where: { oid: nroViaje },
-    data:  { estado: 'FINALIZADO', fechaHoraFin: new Date() },
-  });
 
   // El viaje terminó: ya no hace falta recordar su aviso de proximidad.
   proximidadNotificada.delete(nroViaje);
@@ -469,7 +537,7 @@ const confirmarDescenso = async ({ cuentaOid, nroViaje, io }) => {
     });
   }
 
-  return { estado: 'FINALIZADO' };
+  return { estado: 'FINALIZADO', notificado: true };
 };
 
 /**
@@ -496,29 +564,22 @@ const cancelarViaje = async ({ cuentaOid, nroViaje, io }) => {
     throw new ForbiddenError('No tenés permiso para cancelar este viaje');
   }
 
-  // Transición atómica: el estado viaja en el WHERE para que la BD arbitre la
-  // carrera contra un conductor confirmando/rechazando en paralelo. Un
-  // read-check-write en tres pasos dejaría una ventana para el lost update.
-  // count === 1 ⇒ ganamos la transición y somos los únicos que notificamos.
-  const { count } = await prisma.viaje.updateMany({
-    where: { oid: nroViaje, estado: { in: ESTADOS_CANCELABLES } },
-    data:  { estado: 'CANCELADO', fechaHoraFin: new Date() },
-  });
+  // Transición atómica (ver `transicionar`): el estado viaja en el WHERE para
+  // que la BD arbitre la carrera contra un conductor confirmando o rechazando
+  // en paralelo.
+  const { ganado, estadoActual } = await transicionar(
+    nroViaje,
+    ESTADOS_CANCELABLES,
+    'CANCELADO',
+    { fechaHoraFin: new Date() }
+  );
 
-  if (count === 0) {
-    // O ya no era cancelable, o perdimos la carrera: releemos para distinguir
-    // una cancelación repetida (idempotente) de un estado inválido (400).
-    const actual = await prisma.viaje.findUnique({
-      where:  { oid: nroViaje },
-      select: { estado: true },
-    });
-
-    if (actual?.estado === 'CANCELADO') {
+  if (!ganado) {
+    if (estadoActual === 'CANCELADO') {
       return { estado: 'CANCELADO', notificado: false };
     }
-
     throw new BadRequestError(
-      `El viaje no puede cancelarse: estado actual es ${actual?.estado}`
+      `El viaje no puede cancelarse: estado actual es ${estadoActual}`
     );
   }
 
@@ -530,7 +591,7 @@ const cancelarViaje = async ({ cuentaOid, nroViaje, io }) => {
       nroViaje,
       parada:   viaje.parada.nroParada,
       destino:  viaje.destino,
-      pasajero: viaje.pasajero.persona?.nombreApellido ?? 'Pasajero',
+      pasajero: nombreCompleto(viaje.pasajero.persona) || 'Pasajero',
       mensaje:  'El pasajero canceló la solicitud',
     });
     notificado = true;

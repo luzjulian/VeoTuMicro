@@ -21,6 +21,12 @@ const {
  */
 const ESTADOS_CANCELABLES = ['PENDIENTE', 'CONFIRMADO'];
 
+/**
+ * Estados de un viaje que todavía está en curso: el pasajero sigue dentro del
+ * flujo y tiene que poder volver a su pantalla si recarga la página.
+ */
+const ESTADOS_EN_CURSO = ['PENDIENTE', 'CONFIRMADO', 'ABORDO'];
+
 // ---------------------------------------------------------------------------
 // Helpers internos
 // ---------------------------------------------------------------------------
@@ -600,6 +606,117 @@ const cancelarViaje = async ({ cuentaOid, nroViaje, io }) => {
   return { estado: 'CANCELADO', notificado };
 };
 
+/**
+ * UC8 – Recuperar el viaje en curso (Actor: Pasajero)
+ *
+ * El front mantiene el viaje en memoria, así que al recargar la página (o al
+ * reconectar después de perder la red) pierde el nroViaje y expulsa al
+ * pasajero al inicio del flujo. Este endpoint le permite preguntar por su
+ * viaje activo y volver a la pantalla donde estaba.
+ *
+ * Devuelve null si no hay viaje en curso — no es un error.
+ *
+ * Incluye estimadoArribo porque la cuenta regresiva del front es client-side y
+ * la arranca el evento viaje:confirmado, que ya se disparó y no se repite: sin
+ * este dato el pasajero volvería a la espera con el ETA vacío y nunca recibiría
+ * el aviso de arribo.
+ */
+const obtenerViajeActivo = async ({ cuentaOid }) => {
+  const viaje = await prisma.viaje.findFirst({
+    where: {
+      estado:   { in: ESTADOS_EN_CURSO },
+      pasajero: { persona: { cuenta: { oid: cuentaOid } } },
+    },
+    // Si por algún motivo hubiera más de uno, el más reciente es el relevante.
+    orderBy: { fechaHoraInicio: 'desc' },
+    include: {
+      parada:  true,
+      conduce: {
+        include: {
+          linea:  true,
+          chofer: { include: { persona: true } },
+        },
+      },
+    },
+  });
+
+  if (!viaje) return null;
+
+  const { nroLinea, ramal } = viaje.conduce.linea;
+  const { nroParada, latitud, longitud } = viaje.parada;
+
+  // El ETA solo tiene sentido mientras el colectivo viene en camino.
+  let estimadoArribo = null;
+  if (viaje.estado === 'CONFIRMADO') {
+    try {
+      const dniChofer = viaje.conduce.chofer.persona.dni;
+      const arribos   = await getArribos(nroParada, nroLinea, ramal);
+      estimadoArribo = arribos.find((a) => a.dniChofer === dniChofer)?.estimadoArribo ?? null;
+    } catch {
+      // El mock de arribos puede no tener datos para esta combinación. No es
+      // motivo para fallar la recuperación: el pasajero vuelve a su pantalla
+      // con el ETA vacío, que es mejor que quedar fuera del viaje.
+      estimadoArribo = null;
+    }
+  }
+
+  return {
+    nroViaje: viaje.oid,
+    estado:   viaje.estado,
+    destino:  viaje.destino,
+    nroParada,
+    paradaLatitud:  latitud,
+    paradaLongitud: longitud,
+    nroLinea,
+    ramal,
+    estimadoArribo,
+  };
+};
+
+/**
+ * UC9 – Recuperar las solicitudes en curso (Actor: Conductor)
+ *
+ * La bandeja del panel del conductor se alimenta solo de eventos de Socket.io
+ * y arranca vacía, así que al recargar la página el conductor pierde de vista
+ * los viajes que tiene asignados — incluido el botón para confirmar el
+ * descenso de un pasajero que ya está a bordo.
+ *
+ * Devuelve los viajes en curso de los conduce activos del chofer autenticado,
+ * del más reciente al más antiguo.
+ */
+const obtenerViajesActivosDeChofer = async ({ cuentaOid }) => {
+  const viajes = await prisma.viaje.findMany({
+    where: {
+      estado:  { in: ESTADOS_EN_CURSO },
+      conduce: {
+        // Solo los conduce todavía abiertos: un viaje de un turno ya cerrado
+        // no le corresponde a este chofer en su jornada actual.
+        fechaHoraFin: null,
+        chofer: { persona: { cuenta: { oid: cuentaOid } } },
+      },
+    },
+    orderBy: { fechaHoraInicio: 'desc' },
+    include: {
+      parada:   true,
+      pasajero: { include: { persona: true } },
+      conduce:  { include: { linea: true } },
+    },
+  });
+
+  return viajes.map((v) => ({
+    nroViaje:       v.oid,
+    estado:         v.estado,
+    destino:        v.destino,
+    nroParada:      v.parada.nroParada,
+    paradaLatitud:  v.parada.latitud,
+    paradaLongitud: v.parada.longitud,
+    nroLinea:       v.conduce.linea.nroLinea,
+    ramal:          v.conduce.linea.ramal,
+    pasajero:       nombreCompleto(v.pasajero.persona) || 'Pasajero',
+    fechaHoraInicio: v.fechaHoraInicio,
+  }));
+};
+
 module.exports = {
   iniciarViaje,
   confirmarViaje,
@@ -608,4 +725,6 @@ module.exports = {
   notificarProximidad,
   confirmarDescenso,
   cancelarViaje,
+  obtenerViajeActivo,
+  obtenerViajesActivosDeChofer,
 };

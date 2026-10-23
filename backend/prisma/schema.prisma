@@ -79,6 +79,8 @@ model Pasajero {
   adminOid                Int?     // Administrativo que aprobó la solicitud de registro
   administrativo          Administrativo? @relation(fields: [adminOid], references: [oid])
   
+  aceptadaAt              DateTime?  // cuándo un administrativo aceptó la solicitud
+  
   viajes                  Viaje[]
 }
 

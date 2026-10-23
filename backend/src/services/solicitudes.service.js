@@ -120,10 +120,12 @@ const aceptar = async ({ oid, cuentaOid, io }) => {
       const existente = await tx.solicitudRegistro.findUnique({ where: { oid } });
       if (!existente) throw new NotFoundError('Solicitud no encontrada');
 
+      const ahora = new Date(); // un único instante para solicitud y pasajero
+
       // "Reclamar" la solicitud solo si sigue pendiente: evita que dos admins la resuelvan a la vez.
       const { count } = await tx.solicitudRegistro.updateMany({
         where: { oid, estado: 'PENDIENTE' },
-        data:  { estado: 'ACEPTADA', resueltaAt: new Date(), adminOid: admin.oid },
+        data:  { estado: 'ACEPTADA', resueltaAt: ahora, adminOid: admin.oid },
       });
       if (count === 0) throw new ConflictError('La solicitud ya fue resuelta');
 
@@ -152,6 +154,7 @@ const aceptar = async ({ oid, cuentaOid, io }) => {
           personaOid:              persona.oid,
           certificadoDiscapacidad: existente.certificadoKey,
           adminOid:                admin.oid,
+          aceptadaAt:              ahora,
         },
       });
 

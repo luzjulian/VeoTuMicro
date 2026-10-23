@@ -6,6 +6,7 @@ const viajesRoutes  = require('./viajes.routes');
 const lineasRoutes  = require('./lineas.routes');
 const paradasRoutes = require('./paradas.routes');
 const adminRoutes   = require('./admin.routes');
+const perfilRoutes  = require('./perfil.routes');  
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use('/viajes',  viajesRoutes);
 router.use('/lineas',  lineasRoutes);
 router.use('/paradas', paradasRoutes);
 router.use('/admin',   adminRoutes);
+router.use('/perfil',  perfilRoutes);
 
 module.exports = router;

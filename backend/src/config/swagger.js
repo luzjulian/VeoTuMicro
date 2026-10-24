@@ -28,14 +28,14 @@ const options = {
         // multipart/form-data: los nombres de campo son los del formulario del front
         RegisterInput: {
           type: 'object',
-          required: ['nombre', 'apellido', 'email', 'password', 'certificado'],
+                    required: ['nombre', 'apellido', 'dni', 'email', 'password', 'certificado'],
           properties: {
             nombre:          { type: 'string', example: 'Pepe', description: 'Nombre' },
             apellido:        { type: 'string', example: 'Argento', description: 'Apellido' },
             email:           { type: 'string', format: 'email', example: 'pepeargento@correo.com', description: 'Será el nombre de usuario' },
             password:        { type: 'string', format: 'password', minLength: 8, maxLength: 72, example: 'miPassword123' },
             confirmPassword: { type: 'string', format: 'password', description: 'Opcional; si se envía debe coincidir con password' },
-            dni:             { type: 'string', example: '12345678', description: 'Opcional (7 u 8 dígitos)' },
+            dni:             { type: 'string', example: '12345678', description: 'Obligatorio (7 u 8 dígitos, sin puntos)' },
             fechaNacimiento: { type: 'string', example: '2000-05-15', description: 'Opcional (AAAA-MM-DD)' },
             certificado:     { type: 'string', format: 'binary', description: 'Certificado de discapacidad en PDF (máx. 5 MB)' },
           },

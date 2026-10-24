@@ -9,9 +9,10 @@ import { registrar } from "@/services/api/authApi";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState({
     nombre: "",
     apellido: "",
+    dni: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -29,8 +30,14 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.nombre || !formData.apellido || !formData.email || !formData.password) {
+    if (!formData.nombre || !formData.apellido || !formData.dni || !formData.email || !formData.password) {
       setError("Completá todos los campos obligatorios.");
+      return;
+    }
+
+    // Se aceptan puntos y espacios; el backend guarda solo los dígitos.
+    if (!/^\d{7,8}$/.test(formData.dni.replace(/[.\s]/g, ""))) {
+      setError("Ingresá un DNI válido de 7 u 8 dígitos.");
       return;
     }
 
@@ -120,6 +127,31 @@ export default function RegisterPage() {
               required
               aria-required="true"
               aria-labelledby="apellido-label apellido-hint"
+              aria-describedby={error ? "form-error" : undefined}
+              className="bg-superficie-primaria border-acento-secundario text-texto-principal placeholder:text-acento-secundario/50 text-lg h-12"
+            />
+          </div>
+          
+          {/* DNI */}
+          <div className="space-y-2">
+            <Label id="dni-label" htmlFor="dni" className="text-texto-principal text-lg">
+              DNI
+            </Label>
+            <p id="dni-hint" className="text-acento-secundario text-sm">
+              Ingresa tu DNI, solo números.
+            </p>
+            <Input
+              id="dni"
+              name="dni"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={formData.dni}
+              onChange={handleChange}
+              placeholder="12345678"
+              required
+              aria-required="true"
+              aria-labelledby="dni-label dni-hint"
               aria-describedby={error ? "form-error" : undefined}
               className="bg-superficie-primaria border-acento-secundario text-texto-principal placeholder:text-acento-secundario/50 text-lg h-12"
             />

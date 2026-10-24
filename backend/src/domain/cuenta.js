@@ -42,11 +42,13 @@ const registerSchema = z
     password:        z.string('La contraseña es obligatoria').min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
     confirmPassword: z.string().optional(),
 
-    // Opcionales: el formulario actual no los envía (ver plan, punto P1).
+    // Obligatorio. Se aceptan puntos y espacios ("40.123.456") y se guardan solo los dígitos.
     dni: z.preprocess(
-      vacioAUndefined,
-      z.string().trim().regex(/^\d{7,8}$/, 'DNI inválido (7 u 8 dígitos)').optional()
+      (v) => (typeof v === 'string' ? v.replace(/[.\s]/g, '') : v),
+      z.string('El DNI es obligatorio').regex(/^\d{7,8}$/, 'DNI inválido (7 u 8 dígitos)')
     ),
+
+    // Opcional: el formulario actual no lo envía.
     fechaNacimiento: z.preprocess(
       vacioAUndefined,
       z

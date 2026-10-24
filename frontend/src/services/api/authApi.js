@@ -40,10 +40,11 @@ export function logout() {
  * Envía la solicitud de registro. No crea el usuario: queda pendiente hasta que un administrador la acepte.
  * `certificado` es el objeto File que entrega el componente FileUpload.
  */
-export function registrar({ nombre, apellido, email, password, confirmPassword, certificado }) {
+export function registrar({ nombre, apellido, dni, email, password, confirmPassword, certificado }) {
   const body = new FormData();
   body.append("nombre", nombre);
   if (apellido) body.append("apellido", apellido);
+  body.append("dni", dni);
   body.append("email", email);
   body.append("password", password);
   body.append("confirmPassword", confirmPassword);

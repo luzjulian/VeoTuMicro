@@ -6,7 +6,7 @@ import { ErrorLineaModal }   from "@/components/pasajero/ErrorLineaModal";
 import { useVoiceListSelection } from "@/hooks/useVoiceListSelection";
 import { useSpeechSynthesis }    from "@/hooks/useSpeechSynthesis";
 import { useGPSFlow }            from "@/hooks/useGPSFlow";
-import { matchLineaPorVoz }      from "@/services/mock/mockPasajeroService";
+import { matchLineaPorVoz }      from "@/lib/voiceMatching";
 import {
   getLineasActivas,
   getParadaCercana,

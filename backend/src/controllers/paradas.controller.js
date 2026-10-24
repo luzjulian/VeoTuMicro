@@ -1,6 +1,6 @@
 // backend/src/controllers/paradas.controller.js
 
-const { getParadaCercana } = require('../services/paradas.service');
+const { getParadaCercana, getParadaPorInterseccion } = require('../services/paradas.service');
 
 /**
  * GET /api/paradas/cercana?lat=&lon=
@@ -17,4 +17,18 @@ async function paradaCercana(req, res, next) {
   }
 }
 
-module.exports = { paradaCercana };
+/**
+ * GET /api/paradas/por-interseccion?calle1=&calle2=
+ * Ubicación manual: parada más cercana a la intersección de dos calles.
+ */
+async function paradaPorInterseccion(req, res, next) {
+  try {
+    const { calle1, calle2 } = req.validated.query;
+    const parada = await getParadaPorInterseccion(calle1, calle2);
+    res.json(parada);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { paradaCercana, paradaPorInterseccion };

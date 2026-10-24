@@ -16,4 +16,20 @@ const paradaCercanaSchema = z.object({
     .pipe(z.number({ invalid_type_error: 'lon debe ser un número' }).finite()),
 });
 
-module.exports = { paradaCercanaSchema };
+// GET /api/paradas/por-interseccion?calle1=&calle2=
+// Solo letras, números y signos comunes en nombres de calle: el texto termina dentro de
+// una consulta a un servicio externo, así que no se aceptan otros caracteres.
+const nombreDeCalle = (campo) =>
+  z
+    .string({ error: `${campo} es requerida` })
+    .trim()
+    .min(1, `${campo} es requerida`)
+    .max(60, `${campo} es demasiado larga`)
+    .regex(/^[\p{L}\p{N} .'°ºª-]+$/u, `${campo} contiene caracteres no permitidos`);
+
+const interseccionSchema = z.object({
+  calle1: nombreDeCalle('La primera calle'),
+  calle2: nombreDeCalle('La segunda calle'),
+});
+
+module.exports = { paradaCercanaSchema, interseccionSchema };

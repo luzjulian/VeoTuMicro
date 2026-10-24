@@ -2,6 +2,7 @@
 
 const prisma = require('../config/prisma');
 const { AppError, BadRequestError } = require('../lib/http-errors');
+const { geocodificarInterseccion } = require('../lib/geocoding');
 
 /**
  * Distancia euclidiana máxima aceptable (en grados² lat/lon).
@@ -16,15 +17,17 @@ const { AppError, BadRequestError } = require('../lib/http-errors');
 const MAX_DIST_SQ = 5e-7;
 
 /**
- * Encuentra la ParadaAscenso más cercana a las coordenadas dadas,
+ * Busca, entre todas las ParadaAscenso, la más cercana a CUALQUIERA de los puntos dados,
  * siempre que esté dentro del radio máximo definido por MAX_DIST_SQ.
  * Lanza BadRequestError si no hay ninguna parada cercana.
  *
- * @param {number} lat   latitud GPS del pasajero
- * @param {number} lon   longitud GPS del pasajero
+ * Con un solo punto (GPS) es la búsqueda de siempre; con varios (una intersección que
+ * existe en más de un lugar) gana la parada que quede más cerca de alguno de ellos.
+ *
+ * @param {Array<{ lat: number, lon: number }>} puntos
  * @returns {Promise<{ nroParada: string, latitud: number, longitud: number }>}
  */
-async function getParadaCercana(lat, lon) {
+async function paradaMasCercanaA(puntos) {
   const paradas = await prisma.paradaAscenso.findMany({
     select: { nroParada: true, latitud: true, longitud: true },
   });
@@ -36,13 +39,15 @@ async function getParadaCercana(lat, lon) {
   let nearest = null;
   let minDist = Infinity;
 
-  for (const p of paradas) {
-    const dlat = p.latitud  - lat;
-    const dlon = p.longitud - lon;
-    const dist = dlat * dlat + dlon * dlon; // raíz innecesaria para comparar
-    if (dist < minDist) {
-      minDist = dist;
-      nearest = p;
+  for (const { lat, lon } of puntos) {
+    for (const p of paradas) {
+      const dlat = p.latitud  - lat;
+      const dlon = p.longitud - lon;
+      const dist = dlat * dlat + dlon * dlon; // raíz innecesaria para comparar
+      if (dist < minDist) {
+        minDist = dist;
+        nearest = p;
+      }
     }
   }
 
@@ -55,4 +60,24 @@ async function getParadaCercana(lat, lon) {
   return nearest;
 }
 
-module.exports = { getParadaCercana };
+/**
+ * Parada más cercana a las coordenadas GPS del pasajero.
+ *
+ * @param {number} lat   latitud GPS del pasajero
+ * @param {number} lon   longitud GPS del pasajero
+ */
+const getParadaCercana = (lat, lon) => paradaMasCercanaA([{ lat, lon }]);
+
+/**
+ * Ubicación manual: el pasajero indica la intersección de dos calles, se convierte en
+ * coordenadas y se compara por proximidad contra las paradas, igual que con el GPS.
+ *
+ * @param {string} calle1
+ * @param {string} calle2
+ */
+async function getParadaPorInterseccion(calle1, calle2) {
+  const puntos = await geocodificarInterseccion(calle1, calle2);
+  return paradaMasCercanaA(puntos);
+}
+
+module.exports = { getParadaCercana, getParadaPorInterseccion };

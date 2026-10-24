@@ -6,9 +6,10 @@ import { EditarDatosModal } from "@/components/perfil/EditarDatosModal";
 import { CertificadoModal } from "@/components/perfil/CertificadoModal";
 import { Toast } from "@/components/common/Toast";
 import { BottomNav } from "@/components/pasajero/BottomNav";
-import { getPerfil, actualizarPerfil } from "@/services/mock/mockPerfilService";
-import { useAuth } from "@/context/AuthContext";
 
+import { useAuth } from "@/context/AuthContext";
+import { obtenerPerfil, actualizarPerfil } from "@/services/api/perfilApi";
+import { formatearFecha } from "@/utils/formatearFecha";
 /**
  * Vista de Perfil (Pasajero / Conductor / Admin).
  * - Muestra info general del usuario (nombre, DNI, email, teléfono, fecha registro).
@@ -18,8 +19,8 @@ import { useAuth } from "@/context/AuthContext";
 
 const ROL_LABEL = {
   pasajero: "Pasajero",
-  conductor: "Conductor",
-  admin: "Administrador",
+  chofer: "Conductor",
+  administrativo: "Administrador",
 };
 
 export default function PerfilPage() {
@@ -38,28 +39,29 @@ export default function PerfilPage() {
     navigate("/login", { replace: true });
   };
 
-  useEffect(() => {
-    getPerfil()
+    useEffect(() => {
+    obtenerPerfil()
       .then(setUsuario)
+      .catch(() => setUsuario(null))
       .finally(() => setCargando(false));
   }, []);
 
-  const iniciales = useMemo(() => {
-    if (!usuario?.nombre) return "";
-    const partes = usuario.nombre.trim().split(/\s+/);
-    const primera = partes[0]?.[0] ?? "";
-    const segunda = partes[1]?.[0] ?? "";
-    return (primera + segunda).toUpperCase();
-  }, [usuario?.nombre]);
+  const nombreCompleto = usuario ? `${usuario.nombre} ${usuario.apellido}`.trim() : "";
 
-  const handleGuardar = async (datosActualizados) => {
+  const iniciales = useMemo(() => {
+    if (!usuario) return "";
+    return ((usuario.nombre?.[0] ?? "") + (usuario.apellido?.[0] ?? "")).toUpperCase();
+  }, [usuario]);
+
+  const handleGuardar = async (datos) => {
     try {
-      const actualizado = await actualizarPerfil(datosActualizados);
+      const actualizado = await actualizarPerfil(datos);
       setUsuario(actualizado);
       setModalEditar(false);
       setToast({ mensaje: "Datos actualizados", variante: "exito" });
-    } catch {
-      setToast({ mensaje: "No se pudieron guardar los cambios", variante: "error" });
+    } catch (err) {
+      // Si el email ya está en uso, el backend responde 409 con su mensaje.
+      setToast({ mensaje: err.message || "No se pudieron guardar los cambios", variante: "error" });
     }
   };
 
@@ -112,7 +114,7 @@ export default function PerfilPage() {
             </div>
             <div className="min-w-0">
               <p className="text-lg font-bold text-texto-principal mb-1 truncate">
-                {usuario.nombre}
+                {nombreCompleto}
               </p>
               <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-superficie-primaria text-acento-primario">
                 {ROL_LABEL[usuario.rol]}
@@ -128,7 +130,7 @@ export default function PerfilPage() {
             </li>
             <li className="p-4 bg-fondo-secundario border border-superficie-primaria rounded-lg">
               <p className="text-sm text-acento-secundario font-medium mb-1">DNI</p>
-              <p className="text-base font-bold text-texto-principal">{usuario.dni}</p>
+              <p className="text-base font-bold text-texto-principal">{usuario.dni ?? "No cargado"}</p>
             </li>
             <li className="p-4 bg-fondo-secundario border border-superficie-primaria rounded-lg">
               <p className="text-sm text-acento-secundario font-medium mb-1">Email</p>
@@ -136,12 +138,16 @@ export default function PerfilPage() {
             </li>
             <li className="p-4 bg-fondo-secundario border border-superficie-primaria rounded-lg">
               <p className="text-sm text-acento-secundario font-medium mb-1">Teléfono</p>
-              <p className="text-base font-bold text-texto-principal">{usuario.telefono}</p>
+              <p className="text-base font-bold text-texto-principal">{usuario.telefono || "No cargado"}</p>
             </li>
-            <li className="p-4 bg-fondo-secundario border border-superficie-primaria rounded-lg">
-              <p className="text-sm text-acento-secundario font-medium mb-1">Fecha de registro</p>
-              <p className="text-base font-bold text-texto-principal">{usuario.fechaRegistro}</p>
-            </li>
+            {usuario.rol === "pasajero" && (
+              <li className="p-4 bg-fondo-secundario border border-superficie-primaria rounded-lg">
+                <p className="text-sm text-acento-secundario font-medium mb-1">Fecha de aceptación</p>
+                <p className="text-base font-bold text-texto-principal">
+                  {formatearFecha(usuario.fechaAceptacion)}
+                </p>
+              </li>
+            )}
           </ul>
 
           {/* Certificado — solo pasajero */}
@@ -200,11 +206,12 @@ export default function PerfilPage() {
       {/* Modales */}
       <EditarDatosModal
         abierto={modalEditar}
-        datosIniciales={{
+                datosIniciales={{
           nombre: usuario.nombre,
+          apellido: usuario.apellido,
           email: usuario.email,
           telefono: usuario.telefono,
-          dni: usuario.dni,
+          dni: usuario.dni ?? "",
         }}
         onClose={() => setModalEditar(false)}
         onGuardar={handleGuardar}

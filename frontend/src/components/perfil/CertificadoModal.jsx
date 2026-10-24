@@ -1,5 +1,6 @@
 // frontend/src/components/perfil/CertificadoModal.jsx
 import { useEffect } from "react";
+import { formatearFecha } from "@/utils/formatearFecha";
 
 /**
  * Modal que muestra el certificado de discapacidad en un iframe.
@@ -55,12 +56,12 @@ export function CertificadoModal({ abierto, onClose, certificado }) {
           <iframe
             src={certificado.url}
             title="Vista previa del certificado de discapacidad"
-            className="w-full h-\[420px\] rounded"
+            className="w-full h-[420px] rounded"
           />
         </div>
 
         <p className="text-sm text-acento-secundario mb-4">
-          {certificado.nombreArchivo} · Cargado el {certificado.fechaCarga}
+          {certificado.nombreArchivo} · Cargado el {formatearFecha(certificado.fechaCarga)}
         </p>
 
         <button

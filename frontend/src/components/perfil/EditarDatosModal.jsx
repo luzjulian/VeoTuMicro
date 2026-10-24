@@ -46,8 +46,8 @@ export function EditarDatosModal({ abierto, datosIniciales, onClose, onGuardar }
     setError(null);
 
     // Campos obligatorios (mismo criterio que RegisterPage)
-    if (!formData.nombre || !formData.email || !formData.telefono) {
-      setError("Completá todos los campos obligatorios.");
+    if (!formData.nombre?.trim() || !formData.apellido?.trim() || !formData.email?.trim()) {
+      setError("Completá nombre, apellido y correo electrónico.");
       return;
     }
 
@@ -105,16 +105,29 @@ export function EditarDatosModal({ abierto, datosIniciales, onClose, onGuardar }
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="nombre" className="text-texto-principal text-lg">
-              Nombre completo
-            </Label>
+            <Label htmlFor="nombre" className="text-texto-principal text-lg">Nombre</Label>
             <Input
               id="nombre"
               name="nombre"
               type="text"
               value={formData.nombre}
               onChange={handleChange}
-              placeholder="Tu nombre y apellido"
+              placeholder="Tu nombre"
+              required
+              aria-required="true"
+              className="bg-superficie-primaria border-acento-secundario text-texto-principal placeholder:text-acento-secundario/50 text-lg h-12"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="apellido" className="text-texto-principal text-lg">Apellido</Label>
+            <Input
+              id="apellido"
+              name="apellido"
+              type="text"
+              value={formData.apellido}
+              onChange={handleChange}
+              placeholder="Tu apellido"
               required
               aria-required="true"
               className="bg-superficie-primaria border-acento-secundario text-texto-principal placeholder:text-acento-secundario/50 text-lg h-12"
@@ -140,7 +153,7 @@ export function EditarDatosModal({ abierto, datosIniciales, onClose, onGuardar }
 
           <div className="space-y-2">
             <Label htmlFor="telefono" className="text-texto-principal text-lg">
-              Teléfono
+              Teléfono (opcional)
             </Label>
             <Input
               id="telefono"
@@ -149,8 +162,6 @@ export function EditarDatosModal({ abierto, datosIniciales, onClose, onGuardar }
               value={formData.telefono}
               onChange={handleChange}
               placeholder="+54 221 555 1234"
-              required
-              aria-required="true"
               className="bg-superficie-primaria border-acento-secundario text-texto-principal placeholder:text-acento-secundario/50 text-lg h-12"
             />
           </div>
@@ -167,6 +178,7 @@ export function EditarDatosModal({ abierto, datosIniciales, onClose, onGuardar }
               disabled
               aria-disabled="true"
               className="bg-fondo-secundario border-superficie-primaria text-acento-secundario text-lg h-12 cursor-not-allowed"
+              placeholder="No cargado"
             />
             <p className="text-sm text-acento-secundario">
               El DNI no puede modificarse.

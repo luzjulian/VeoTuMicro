@@ -271,9 +271,10 @@ async function main() {
     });
     await prisma.pasajero.create({
       data: {
-        certificadoDiscapacidad: p.certificadoDiscapacidad,
+        certificadoDiscapacidad: guardarPdfDeEjemplo(`Certificado de ejemplo - ${p.nombre} ${p.apellido}`),
         personaOid:              persona.oid,
         adminOid:                adminRol.oid, // validado por el admin
+        aceptadaAt:              new Date(),
       },
     });
     await prisma.cuenta.create({

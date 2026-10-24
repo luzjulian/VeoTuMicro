@@ -13,16 +13,17 @@ export function useVoiceFreeTextCapture({
   formatearConfirmacion,
   mensajeConfirmadoTts,
   onConfirmado,
+  senalSonora = false,
 }) {
   const [valor, setValor] = useState(null);
   const [intentos, setIntentos] = useState(0);
   const [fallbackActivo, setFallbackActivo] = useState(false);
 
   const { isListening, transcript, startListening, stopListening, resetTranscript } =
-    useSpeechRecognition();
+    useSpeechRecognition({ senalSonora });
   const { speak } = useSpeechSynthesis();
   const { preguntar: preguntarSiNo, isListening: escuchandoConfirmacion } =
-    useVoiceYesNo();
+    useVoiceYesNo({ senalSonora });
 
   const esperandoCaptura = useRef(false);
   const intentosRef = useRef(0);

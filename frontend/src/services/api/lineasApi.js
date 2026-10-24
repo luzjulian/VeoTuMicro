@@ -29,6 +29,30 @@ export async function getParadaCercana(lat, lon) {
 }
 
 /**
+ * Ubicación manual: parada de ascenso más cercana a la intersección de dos calles.
+ * Si algo falla, lanza un Error cuyo mensaje es el que devuelve el backend
+ * ("No encontramos esa intersección...", "No hay paradas...cerca..."), listo para mostrar.
+ *
+ * @param {string} calle1
+ * @param {string} calle2
+ * @returns {Promise<{ nroParada: string, latitud: number, longitud: number }>}
+ */
+export async function getParadaPorInterseccion(calle1, calle2) {
+  const params = new URLSearchParams({ calle1, calle2 });
+  try {
+    return await fetchJson(`/api/paradas/por-interseccion?${params}`);
+  } catch (err) {
+    let mensaje = err.message;
+    try {
+      mensaje = JSON.parse(err.message).error ?? mensaje;
+    } catch {
+      // no era JSON: se usa el texto tal cual
+    }
+    throw new Error(mensaje, { cause: err });
+  }
+}
+
+/**
  * Valida que la línea elegida tenga arrivals en la parada detectada por GPS.
  * Resuelve si está disponible; lanza Error si no lo está.
  *

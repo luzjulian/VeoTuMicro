@@ -56,7 +56,8 @@ const guardarPdfDeEjemplo = (texto) => {
 // ---------------------------------------------------------------------------
 
 // Las 3 líneas que cubre el mock proximosArribos.json.
-// Nota: Persona.dni es @unique en el schema — los DNIs de esta lista no deben repetirse.
+// Nota: Persona.dni es @unique y NOT NULL — los DNIs de esta lista no deben
+// repetirse ni faltar (incluidas las solicitudes de ejemplo del paso 7).
 const LINEAS = [
   { nroLinea: '307', ramal: 'A' },
   { nroLinea: '214', ramal: 'D' },
@@ -249,7 +250,6 @@ async function main() {
   });
   await prisma.cuenta.create({
     data: {
-      dni:          ADMIN_DATA.dni,
       nombreUsuario: ADMIN_DATA.nombreUsuario,
       contrasenia:  hashPwd(ADMIN_DATA.password),
       personaOid:   personaAdmin.oid,
@@ -279,7 +279,6 @@ async function main() {
     });
     await prisma.cuenta.create({
       data: {
-        dni:          p.dni,
         nombreUsuario: p.nombreUsuario,
         contrasenia:  hashPwd(p.password),
         personaOid:   persona.oid,
@@ -310,7 +309,6 @@ async function main() {
     });
     await prisma.cuenta.create({
       data: {
-        dni:          c.dni,
         nombreUsuario: c.nombreUsuario,
         contrasenia:  hashPwd(c.password),
         personaOid:   persona.oid,
@@ -337,8 +335,8 @@ async function main() {
   const HACE = (min) => new Date(Date.now() - min * 60 * 1000);
   const SOLICITUDES_DATA = [
     { nombre: 'Marina', apellido: 'García', dni: '34901567', email: 'marina@veotumicro.test', estado: 'PENDIENTE', createdAt: HACE(120) },
-    { nombre: 'Diego', apellido: 'Romero', dni: null,       email: 'diego@veotumicro.test',  estado: 'PENDIENTE', createdAt: HACE(45) },
-    { nombre: 'Andrés', apellido: 'Pérez', dni: '34612445', email: 'andres@veotumicro.test', estado: 'RECHAZADA', createdAt: HACE(60 * 48) },
+    { nombre: 'Diego', apellido: 'Romero',  dni: '33728094', email: 'diego@veotumicro.test',  estado: 'PENDIENTE', createdAt: HACE(45) },
+    { nombre: 'Andrés', apellido: 'Pérez',  dni: '34612445', email: 'andres@veotumicro.test', estado: 'RECHAZADA', createdAt: HACE(60 * 48) },
   ];
   for (const sol of SOLICITUDES_DATA) {
     await prisma.solicitudRegistro.create({

@@ -15,7 +15,6 @@ datasource db {
 
 model Cuenta {
   oid           Int            @id @default(autoincrement())
-  dni           String?        // opcional: el formulario de registro actual no lo pide
   nombreUsuario String         @unique
   contrasenia   String
 
@@ -38,11 +37,11 @@ model RefreshToken {
 
 model Persona {
   oid             Int      @id @default(autoincrement())
-  dni             String?  @unique
+  dni             String   @unique
   nombre          String
   apellido        String
   fechaNacimiento DateTime?
-  email           String?  @unique
+  email           String  @unique
 
   // Relaciones
   cuenta          Cuenta?
@@ -86,8 +85,8 @@ model Pasajero {
 
 model Chofer {
   oid                 Int      @id @default(autoincrement())
-  nroLicenciaConducir String
-  
+  nroLicenciaConducir String   @unique
+
   personaOid          Int      @unique
   persona             Persona  @relation(fields: [personaOid], references: [oid])
   
@@ -121,7 +120,7 @@ model SolicitudRegistro {
   oid               Int             @id @default(autoincrement())
   nombre            String
   apellido          String
-  dni               String?
+  dni               String          
   fechaNacimiento   DateTime?
   email             String          // también será el nombreUsuario de la Cuenta
   contraseniaHash   String          // hash bcrypt, nunca la contraseña en claro

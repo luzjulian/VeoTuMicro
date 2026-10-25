@@ -20,4 +20,14 @@ const authRateLimit = rateLimit({
   message: { error: 'Demasiados intentos, esperá unos minutos e intentá de nuevo' },
 });
 
-module.exports = { globalRateLimit, authRateLimit };
+// Cada búsqueda de intersección consulta un servicio externo gratuito (Nominatim):
+// se limita por IP para no abusar de él.
+const geocodingRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max:      20,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Demasiadas búsquedas seguidas, esperá un minuto e intentá de nuevo' },
+});
+
+module.exports = { globalRateLimit, authRateLimit, geocodingRateLimit };

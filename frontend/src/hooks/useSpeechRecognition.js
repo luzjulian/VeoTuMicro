@@ -1,5 +1,6 @@
 // frontend/src/hooks/useSpeechRecognition.js
 import { useState, useRef, useCallback, useEffect } from "react";
+import { sonarSenalEscucha } from "@/lib/senalEscucha";
 
 const SpeechRecognitionAPI =
   typeof window !== "undefined"
@@ -16,11 +17,14 @@ const SpeechRecognitionAPI =
  *   dejar en `false` y reiniciar manualmente si hace falta.
  * @param {boolean} [options.interimResults=true] - Emitir resultados parciales
  *   mientras el usuario habla (útil para feedback visual en vivo).
+ * @param {boolean} [options.senalSonora=false] - Suena un tono corto cuando el
+ *   micrófono empieza a escuchar, para que quien no ve la pantalla sepa que ya puede hablar.
  */
 export function useSpeechRecognition({
   lang = "es-AR",
   continuous = false,
   interimResults = true,
+  senalSonora = false,
 } = {}) {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -28,6 +32,8 @@ export function useSpeechRecognition({
   const [error, setError] = useState(null);
 
   const recognitionRef = useRef(null);
+  const senalSonoraRef = useRef(senalSonora);
+  senalSonoraRef.current = senalSonora;
   const isSupported = !!SpeechRecognitionAPI;
 
   useEffect(() => {
@@ -37,6 +43,10 @@ export function useSpeechRecognition({
     recognition.lang = lang;
     recognition.continuous = continuous;
     recognition.interimResults = interimResults;
+
+    recognition.onstart = () => {
+      if (senalSonoraRef.current) sonarSenalEscucha();
+    };
 
     recognition.onresult = (event) => {
       let finalChunk = "";
@@ -71,6 +81,7 @@ export function useSpeechRecognition({
     recognitionRef.current = recognition;
 
     return () => {
+      recognition.onstart = null;
       recognition.onresult = null;
       recognition.onerror = null;
       recognition.onend = null;

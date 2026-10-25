@@ -38,6 +38,12 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().min(1).default('VeoTuMicro <no-reply@veotumicro.local>'),
   APP_URL:   z.string().default('http://localhost:5173'),
+
+  // Geocodificación de intersecciones (ubicación manual del pasajero).
+  // Nominatim (OpenStreetMap): sin API key. BBOX = sur,oeste,norte,este (por defecto, Gran La Plata).
+  GEOCODING_URL:        z.string().url().default('https://nominatim.openstreetmap.org'),
+  GEOCODING_BBOX:       z.string().regex(/^-?\d+(\.\d+)?(,-?\d+(\.\d+)?){3}$/, 'GEOCODING_BBOX debe ser sur,oeste,norte,este').default('-35.10,-58.30,-34.70,-57.70'),
+  GEOCODING_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
 }).superRefine((v, ctx) => {
   if (v.NODE_ENV === 'production' && !v.SMTP_HOST) {
     ctx.addIssue({

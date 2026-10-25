@@ -29,6 +29,7 @@ export function useVoiceListSelection({
   const esperandoSeleccion = useRef(false);
   const intentosRef = useRef(0);
   const yaIniciado = useRef(false);
+  const detenidoRef = useRef(false); // true tras detener(): no se retoma la escucha hasta resetSeleccion/reintentar
 
   const pedirSeleccion = useCallback(
     (mensaje) => {
@@ -36,6 +37,7 @@ export function useVoiceListSelection({
       resetTranscript();
       speak(mensaje ?? mensajePregunta, {
         onEnd: () => {
+          if (detenidoRef.current) return;
           // Se marca "esperando" recién en onEnd (ver useVoiceYesNo para
           // el detalle de por qué evita el falso intento fallido al montar).
           esperandoSeleccion.current = true;
@@ -113,6 +115,7 @@ export function useVoiceListSelection({
   // Reactivado por tap en el círculo tras agotar los 10 intentos: reinicia
   // el ciclo completo desde cero.
   const reintentarPorToque = useCallback(() => {
+    detenidoRef.current = false;
     intentosRef.current = 0;
     setIntentos(0);
     setFallbackActivo(false);
@@ -125,12 +128,24 @@ export function useVoiceListSelection({
    * que el usuario elija de nuevo (ej: cierre del modal de error).
    */
   const resetSeleccion = useCallback(() => {
+    detenidoRef.current = false;
     intentosRef.current = 0;
     setIntentos(0);
     setSeleccion(null);
     setFallbackActivo(false);
     pedirSeleccion(mensajePregunta);
   }, [pedirSeleccion, mensajePregunta]);
+
+  /**
+   * Deja de escuchar y abandona el ciclo de selección (sin tocar la selección actual).
+   * Para cuando otra pantalla (ej: la ubicación manual por voz) necesita el micrófono:
+   * dos reconocimientos a la vez se pisan. Para volver a escuchar: resetSeleccion().
+   */
+  const detener = useCallback(() => {
+    detenidoRef.current = true;
+    esperandoSeleccion.current = false;
+    stopListening();
+  }, [stopListening]);
 
   return {
     seleccion,
@@ -140,5 +155,6 @@ export function useVoiceListSelection({
     seleccionarManual,
     reintentarPorToque,
     resetSeleccion,
+    detener,
   };
 }

@@ -13,7 +13,7 @@ export function useVoiceFreeTextCapture({
   formatearConfirmacion,
   mensajeConfirmadoTts,
   onConfirmado,
-  senalSonora = false,
+  senalSonora = true,
 }) {
   const [valor, setValor] = useState(null);
   const [intentos, setIntentos] = useState(0);

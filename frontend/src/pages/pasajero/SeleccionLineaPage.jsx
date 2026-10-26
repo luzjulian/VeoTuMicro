@@ -123,6 +123,7 @@ export default function SeleccionLineaPage() {
         ? "Vas a decir las dos calles de la esquina donde te encontrás"
         : "Se obtendrá tu ubicación mediante GPS para registrar tu parada de subida",
       onConfirmado: confirmarSeleccion,
+      indicacionInicial: true, // primera interacción por voz del pasajero
     });
 
   useEffect(() => {

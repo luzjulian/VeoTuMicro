@@ -11,6 +11,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as authApi from "@/services/api/authApi";
 import { disconnectSocket } from "@/services/socket";
+import { olvidarIndicacionTono } from "@/lib/senalEscucha";
 
 const AuthContext = createContext(null);
 
@@ -64,6 +65,7 @@ export function AuthProvider({ children }) {
       // Aunque falle el cierre en el servidor, la sesión se cierra en la app.
     }
     disconnectSocket();
+    olvidarIndicacionTono();
     setUsuario(null);
   }, []);
 

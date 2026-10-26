@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useVoiceQueue } from "@/hooks/useVoiceQueue";
 import { interpretarSiNo } from "@/lib/voiceMatching";
+import { sonarSenalEscucha } from "@/lib/senalEscucha";
 
 const FRASES_CANCELACION = ["cancelar viaje", "cancelar solicitud", "cancelar"];
 
@@ -21,8 +22,10 @@ function esPedidoDeCancelacion(transcript) {
  * la pregunta pendiente (ej. "¿Has podido abordar?").
  */
 export function useEsperaVoiceFlow({ onCancelar }) {
+  // Sin tono automático: la escucha constante se reinicia sola cada pocos segundos y el tono
+  // sonaría todo el tiempo. Suena solo cuando se le pide algo a la persona (ver abajo).
   const { isListening, transcript, startListening, stopListening, resetTranscript } =
-    useSpeechRecognition();
+    useSpeechRecognition({ senalSonora: false });
   const { encolar, vaciarCola, estaHablando } = useVoiceQueue();
 
   const [escuchaActiva, setEscuchaActiva] = useState(false);
@@ -64,14 +67,17 @@ export function useEsperaVoiceFlow({ onCancelar }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isListening, transcript]);
 
-  const iniciarEscuchaConstante = useCallback(() => setEscuchaActiva(true), []);
+  const iniciarEscuchaConstante = useCallback(() => {
+    sonarSenalEscucha();
+    setEscuchaActiva(true);
+  }, []);
 
   const anunciar = useCallback((texto, opciones) => encolar(texto, opciones), [encolar]);
 
   const preguntarSiNo = useCallback(
     (texto, { onSi, onNo }) => {
       preguntaPendienteRef.current = { onSi, onNo };
-      encolar(texto);
+      encolar(texto, { onEnd: () => sonarSenalEscucha() });
     },
     [encolar]
   );

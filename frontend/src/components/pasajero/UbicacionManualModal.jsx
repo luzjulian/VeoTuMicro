@@ -24,7 +24,6 @@ function CapturaCalle({ pregunta, onConfirmada }) {
       formatearConfirmacion: (texto) =>
         `${normalizarCalleHablada(texto)}. ¿Confirmás? Decí sí o no`,
       mensajeConfirmadoTts: "Calle confirmada",
-      senalSonora: true, // tono "ya podés hablar": la persona no ve la pantalla
       onConfirmado: (texto) => onConfirmada(normalizarCalleHablada(texto)),
     });
 

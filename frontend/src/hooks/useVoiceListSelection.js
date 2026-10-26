@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { useVoiceYesNo } from "@/hooks/useVoiceYesNo";
+import { INDICACION_TONO, consumirIndicacionTono } from "@/lib/senalEscucha";
 
 const MAX_INTENTOS = 10;
 const MENSAJE_FALLBACK = "No pude reconocerte, tocá el micrófono para volver a intentar";
@@ -15,6 +16,7 @@ export function useVoiceListSelection({
   mensajeNoDisponible,
   mensajeConfirmadoTts,
   onConfirmado,
+  indicacionInicial = false, // true: la primera vez en la sesión se explica el tono antes de preguntar
 }) {
   const [seleccion, setSeleccion] = useState(null);
   const [intentos, setIntentos] = useState(0);
@@ -72,7 +74,11 @@ export function useVoiceListSelection({
     // así que no hace falta forzarlo, y forzarlo es lo que rompía todo.
     if (yaIniciado.current) return;
     yaIniciado.current = true;
-    pedirSeleccion();
+    pedirSeleccion(
+      indicacionInicial && consumirIndicacionTono()
+        ? `${INDICACION_TONO} ${mensajePregunta}`
+        : undefined
+    );
 
     return () => {
       stopListening();

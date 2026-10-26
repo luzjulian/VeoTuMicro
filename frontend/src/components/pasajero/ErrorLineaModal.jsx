@@ -22,7 +22,7 @@ const MAX_INTENTOS_RESPUESTA = 3;
 
 export function ErrorLineaModal({ onCerrar, onManual }) {
   const { speak } = useSpeechSynthesis();
-  const { preguntar, isListening } = useVoiceYesNo({ senalSonora: true });
+  const { preguntar, isListening } = useVoiceYesNo();
   const timerRef   = useRef(null);
   const resueltoRef = useRef(false); // true cuando la persona ya decidió (voz o toque)
   const iniciadoRef = useRef(false);

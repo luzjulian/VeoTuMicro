@@ -17,14 +17,14 @@ const SpeechRecognitionAPI =
  *   dejar en `false` y reiniciar manualmente si hace falta.
  * @param {boolean} [options.interimResults=true] - Emitir resultados parciales
  *   mientras el usuario habla (útil para feedback visual en vivo).
- * @param {boolean} [options.senalSonora=false] - Suena un tono corto cuando el
+ * @param {boolean} [options.senalSonora=true] - Suena un tono corto cuando el
  *   micrófono empieza a escuchar, para que quien no ve la pantalla sepa que ya puede hablar.
  */
 export function useSpeechRecognition({
   lang = "es-AR",
   continuous = false,
   interimResults = true,
-  senalSonora = false,
+  senalSonora = true,
 } = {}) {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");

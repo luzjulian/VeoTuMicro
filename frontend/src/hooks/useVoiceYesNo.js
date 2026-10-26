@@ -4,7 +4,7 @@ import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { interpretarSiNo } from "@/lib/voiceMatching";
 
-export function useVoiceYesNo({ senalSonora = false } = {}) {
+export function useVoiceYesNo({ senalSonora = true } = {}) {
   const { isListening, transcript, startListening, stopListening, resetTranscript } =
     useSpeechRecognition({ senalSonora });
   const { speak } = useSpeechSynthesis();

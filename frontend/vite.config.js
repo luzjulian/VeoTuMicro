@@ -12,6 +12,11 @@ export default defineConfig({
     },
   },
   server: {
+    // Hosts permitidos además de localhost. Necesario para exponer el dev server
+    // por un túnel HTTPS (Cloudflare / ngrok): sin esto responde 403.
+    // El punto inicial habilita el dominio y todos sus subdominios, así no hay
+    // que tocar esto cada vez que el túnel genera una URL nueva.
+    allowedHosts: ['.trycloudflare.com', '.ngrok-free.app', '.ngrok.app'],
     proxy: {
       // Todo el backend cuelga de /api: endpoints REST y el handshake
       // y los WebSockets de Socket.io (/api/socket.io).

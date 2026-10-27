@@ -3,11 +3,13 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 
 export function LoginForm({ rol, onSubmit, textoBoton = "Iniciar sesión" }) {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  const { habilitarVoz } = useSpeechSynthesis();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -17,6 +19,11 @@ export function LoginForm({ rol, onSubmit, textoBoton = "Iniciar sesión" }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    // Primero de todo, dentro del gesto del usuario: habilita la voz para el
+    // resto de la sesión. Si esto se hace después de un await, Safari en iOS
+    // ya no lo considera parte del toque y las pantallas siguientes no hablan.
+    habilitarVoz();
 
     if (!formData.email || !formData.password) {
       setError("Completá correo y contraseña.");

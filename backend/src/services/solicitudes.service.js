@@ -142,7 +142,6 @@ const aceptar = async ({ oid, cuentaOid, io }) => {
       // El email es el nombre de usuario (el login del front pide email).
       await tx.cuenta.create({
         data: {
-          dni:         existente.dni,
           nombreUsuario: existente.email,
           contrasenia: existente.contraseniaHash,
           personaOid:  persona.oid,

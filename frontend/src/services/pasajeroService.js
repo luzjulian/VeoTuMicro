@@ -12,7 +12,13 @@ const socket = () => getSocket();
 
 // ── Countdown client-side (mismo que el mock pero con ETA real del backend) ──
 
-const MS_POR_MINUTO_SIMULADO = 60_000; // 1 min real en producción
+// La espera dura SIEMPRE lo mismo, sin importar el estimado del backend. El
+// estimado (por ejemplo 7 minutos) se sigue mostrando y bajando de a uno, pero
+// repartido parejo dentro de esta duración fija.
+const DURACION_ESPERA_MS = 40_000;
+
+// Cuánto dura cada "minuto" de la cuenta regresiva para que el total sea fijo.
+const msPorMinutoDe = (minutosTotales) => DURACION_ESPERA_MS / minutosTotales;
 
 // ── Referencia de reloj del arribo ───────────────────────────────────────────
 //
@@ -29,12 +35,20 @@ const MS_POR_MINUTO_SIMULADO = 60_000; // 1 min real en producción
 
 const CLAVE_ARRIBO = 'veotumicro:arribo';
 
-/** Recuerda cuándo vence el arribo de este viaje. */
+/**
+ * Recuerda cuándo vence el arribo de este viaje y cuánto dura cada "minuto".
+ * Se guarda la duración del minuto porque, tras una recarga, ya no sabemos
+ * cuál era el estimado original y hace falta para seguir al mismo ritmo.
+ */
 function guardarArribo(nroViaje, minutos) {
   try {
     localStorage.setItem(
       CLAVE_ARRIBO,
-      JSON.stringify({ nroViaje, venceEn: Date.now() + minutos * MS_POR_MINUTO_SIMULADO })
+      JSON.stringify({
+        nroViaje,
+        venceEn: Date.now() + DURACION_ESPERA_MS,
+        msPorMinuto: msPorMinutoDe(minutos),
+      })
     );
   } catch {
     // Modo privado o storage bloqueado: seguimos sin persistir.
@@ -50,36 +64,48 @@ function olvidarArribo() {
   }
 }
 
+/** Lee el arribo guardado de este viaje, o null si no hay dato utilizable. */
+function leerArribo(nroViaje) {
+  try {
+    const crudo = localStorage.getItem(CLAVE_ARRIBO);
+    if (!crudo) return null;
+
+    const { nroViaje: guardado, venceEn, msPorMinuto } = JSON.parse(crudo);
+    if (guardado !== nroViaje) return null;
+    if (typeof venceEn !== 'number' || typeof msPorMinuto !== 'number' || msPorMinuto <= 0) {
+      return null;
+    }
+    return { venceEn, msPorMinuto };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Minutos que faltan para el arribo de este viaje según el instante guardado.
  * Devuelve `etaDelBackend` si no hay dato utilizable.
  */
 function minutosRestantesDeArribo(nroViaje, etaDelBackend) {
-  try {
-    const crudo = localStorage.getItem(CLAVE_ARRIBO);
-    if (!crudo) return etaDelBackend;
+  const arribo = leerArribo(nroViaje);
+  if (!arribo) return etaDelBackend;
 
-    const { nroViaje: guardado, venceEn } = JSON.parse(crudo);
-    if (guardado !== nroViaje || typeof venceEn !== 'number') return etaDelBackend;
+  const minutos = Math.ceil((arribo.venceEn - Date.now()) / arribo.msPorMinuto);
 
-    const minutos = Math.ceil((venceEn - Date.now()) / MS_POR_MINUTO_SIMULADO);
+  // Más tiempo que el offset original significa reloj cambiado o dato
+  // corrupto: no le creemos y volvemos al dato del backend.
+  if (etaDelBackend != null && minutos > etaDelBackend) return etaDelBackend;
 
-    // Más tiempo que el offset original significa reloj cambiado o dato
-    // corrupto: no le creemos y volvemos al dato del backend.
-    if (etaDelBackend != null && minutos > etaDelBackend) return etaDelBackend;
-
-    return Math.max(minutos, 0); // 0 = el arribo ya venció
-  } catch {
-    return etaDelBackend;
-  }
+  return Math.max(minutos, 0); // 0 = el arribo ya venció
 }
 
 /**
  * Inicia el ciclo de countdown de arribo.
  * Emite: eta_actualizado, aviso_un_minuto, colectivo_llego.
+ * `msPorMinuto` es lo que dura cada "minuto"; por defecto reparte la duración
+ * fija entre los minutos iniciales.
  * @returns {() => void} cleanup
  */
-function iniciarCicloArribo(nroViaje, minutosIniciales, onEvent) {
+function iniciarCicloArribo(nroViaje, minutosIniciales, onEvent, msPorMinuto = msPorMinutoDe(minutosIniciales)) {
   let minutosRestantes = minutosIniciales;
   const timers = [];
 
@@ -97,7 +123,7 @@ function iniciarCicloArribo(nroViaje, minutosIniciales, onEvent) {
     }
 
     onEvent('eta_actualizado', { minutosRestantes });
-  }, MS_POR_MINUTO_SIMULADO);
+  }, msPorMinuto);
 
   timers.push(interval);
   return () => timers.forEach((t) => clearInterval(t));
@@ -188,7 +214,9 @@ export function suscribirseAViaje(nroViaje, onEvent, { estimadoArribo = null } =
     }
 
     if (persistir) guardarArribo(nroViaje, minutos);
-    cleanupCiclo = iniciarCicloArribo(nroViaje, minutos, onEvent);
+    // Al recuperar un viaje se sigue al mismo ritmo que tenía guardado.
+    const msPorMinuto = leerArribo(nroViaje)?.msPorMinuto;
+    cleanupCiclo = iniciarCicloArribo(nroViaje, minutos, onEvent, msPorMinuto);
   };
 
   if (typeof estimadoArribo === 'number') {

@@ -12,7 +12,7 @@ import {
 // Cada cuánto se repite el recordatorio de bajada hasta que el conductor
 // confirme el descenso. El repo comprime el tiempo en las demos; si querés
 // que sea observable en segundos, bajá este valor.
-const REPETICION_RECORDATORIO_MS = 3 * 60 * 1000; // 3 minutos
+const REPETICION_RECORDATORIO_MS = 1 * 60 * 1000; // 1 minutos
 
 /**
  * Orquesta el tiempo real del Panel del Conductor (2.8).
